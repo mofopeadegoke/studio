@@ -1,3 +1,82 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "user-alex-morgan",
+      "description": "Profile picture for Alex Morgan",
+      "imageUrl": "https://images.unsplash.com/photo-1583485767110-23ca3eefaac9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx3b21hbiUyMHNvY2NlcnxlbnwwfHx8fDE3NjE2NDY1NjB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman soccer"
+    },
+    {
+      "id": "user-lebron-james",
+      "description": "Profile picture for LeBron James",
+      "imageUrl": "https://images.unsplash.com/photo-1711197719367-2f3947558c4a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxtYW4lMjBiYXNrZXRiYWxsfGVufDB8fHx8MTc2MTc0MTI2OXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man basketball"
+    },
+    {
+      "id": "user-serena-williams",
+      "description": "Profile picture for Serena Williams",
+      "imageUrl": "https://images.unsplash.com/photo-1548920168-70d61248a912?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx3b21hbiUyMHRlbm5pc3xlbnwwfHx8fDE3NjE3NDEyNjl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman tennis"
+    },
+    {
+      "id": "user-tom-brady",
+      "description": "Profile picture for Tom Brady",
+      "imageUrl": "https://images.unsplash.com/photo-1757588136007-370603c9a001?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxtYW4lMjBmb290YmFsbHxlbnwwfHx8fDE3NjE3Mzk5OTl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man football"
+    },
+    {
+      "id": "team-lakers",
+      "description": "Profile picture for LA Lakers",
+      "imageUrl": "https://images.unsplash.com/flagged/photo-1580139624070-910f651c1b78?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxiYXNrZXRiYWxsJTIwdGVhbXxlbnwwfHx8fDE3NjE3MzA4MTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "basketball team"
+    },
+    {
+      "id": "fan-john-doe",
+      "description": "Profile picture for John Doe",
+      "imageUrl": "https://images.unsplash.com/photo-1594672830234-ba4cfe1202dc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8bWFuJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzYxNjY2MDgwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    },
+    {
+      "id": "scout-jane-smith",
+      "description": "Profile picture for Jane Smith",
+      "imageUrl": "https://images.unsplash.com/photo-1557053910-d9eadeed1c58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHBvcnRyYWl0fGVufDB8fHx8MTc2MTY5NjE0NHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman portrait"
+    },
+    {
+      "id": "post-soccer-goal",
+      "description": "Image for a post about a soccer goal",
+      "imageUrl": "https://images.unsplash.com/photo-1560272564-c83b66b1ad12?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzb2NjZXIlMjBnb2FsfGVufDB8fHx8MTc2MTY1NDkzOHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "soccer goal"
+    },
+    {
+      "id": "post-basketball-dunk",
+      "description": "Image for a post about a basketball dunk",
+      "imageUrl": "https://images.unsplash.com/photo-1617721801545-d3ef17776a58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxiYXNrZXRiYWxsJTIwZHVua3xlbnwwfHx8fDE3NjE3MDg3MzV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "basketball dunk"
+    },
+    {
+      "id": "post-team-celebration",
+      "description": "Image for a post about a team celebration",
+      "imageUrl": "https://images.unsplash.com/photo-1738888139143-1730921f657d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx0ZWFtJTIwY2VsZWJyYXRpb258ZW58MHx8fHwxNzYxNzQxMjcwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "team celebration"
+    },
+    {
+      "id": "event-marathon",
+      "description": "Banner for a marathon event",
+      "imageUrl": "https://images.unsplash.com/photo-1570004119777-2b1786b0e5bd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxtYXJhdGhvbiUyMHJ1bnxlbnwwfHx8fDE3NjE3NDEyNjl8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "marathon run"
+    },
+    {
+      "id": "event-soccer-tournament",
+      "description": "Banner for a soccer tournament",
+      "imageUrl": "https://images.unsplash.com/photo-1540379708242-14a809bef941?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxzb2NjZXIlMjBzdGFkaXVtfGVufDB8fHx8MTc2MTY0MzQxMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "soccer stadium"
+    },
+    {
+      "id": "event-basketball-camp",
+      "description": "Banner for a basketball camp",
+      "imageUrl": "https://images.unsplash.com/photo-1515326283062-ef852efa28a8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxiYXNrZXRiYWxsJTIwY291cnR8ZW58MHx8fHwxNzYxNjU4Mjc4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "basketball court"
+    }
+  ]
 }
