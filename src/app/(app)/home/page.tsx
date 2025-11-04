@@ -1,9 +1,12 @@
+'use client';
+
 import { users, posts } from '@/lib/data';
 import { CreatePostForm } from '@/components/app/create-post-form';
 import { PostCard } from '@/components/app/post-card';
+import { useAuth } from '@/context/auth-context';
 
 export default function HomePage() {
-  const currentUser = users.find(u => u.id === '1'); // Simulate logged in as Alex Morgan
+  const { currentUser } = useAuth();
 
   if (!currentUser) return null;
 

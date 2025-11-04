@@ -1,3 +1,6 @@
+
+'use client';
+
 import Link from 'next/link';
 import { conversations, users } from '@/lib/data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -8,9 +11,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNowStrict } from 'date-fns';
+import { useAuth } from '@/context/auth-context';
 
 export default function MessagesPage() {
-  const currentUser = users.find(u => u.id === '1'); // Simulate logged in user
+  const { currentUser } = useAuth();
   if (!currentUser) return null;
 
   // For this demo, we'll display the first conversation.

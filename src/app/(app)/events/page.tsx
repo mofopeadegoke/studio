@@ -1,9 +1,12 @@
+
+'use client';
+
 import { EventCard } from '@/components/app/event-card';
 import { events } from '@/lib/data';
-import { users } from '@/lib/data';
+import { useAuth } from '@/context/auth-context';
 
 export default function EventsPage() {
-  const currentUser = users.find(u => u.id === '1'); // Simulate logged in user
+  const { currentUser } = useAuth();
   if (!currentUser) return null;
 
   return (

@@ -1,3 +1,6 @@
+
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { users, posts } from '@/lib/data';
@@ -9,13 +12,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PostCard } from '@/components/app/post-card';
 import { notFound } from 'next/navigation';
 import { Briefcase, MapPin, Plus } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
 
 export default function ProfilePage({ params }: { params: { userId: string } }) {
+  const { currentUser } = useAuth();
   const user = users.find(u => u.id === params.userId);
-  const currentUser = users.find(u => u.id === '1'); // Simulated logged in user
 
   if (!user || !currentUser) {
-    notFound();
+    // It's possible to land here before the auth context redirects.
+    // notFound() would trigger, so we can return null and wait for redirect.
+    return null;
   }
 
   const userAvatar = PlaceHolderImages.find(img => img.id === user.avatarId);

@@ -1,3 +1,6 @@
+
+'use client';
+
 import {
   SidebarProvider,
   Sidebar,
@@ -22,7 +25,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/app/logo';
-import { users } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
@@ -35,17 +37,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/context/auth-context';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const currentUser = users.find(u => u.id === '1'); // Simulate logged in as Alex Morgan
+  const { currentUser, logout } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!currentUser) {
+      router.push('/login');
+    }
+  }, [currentUser, router]);
 
   if (!currentUser) {
-    return <div>User not found</div>;
+    return null; // or a loading spinner
   }
+
   const userAvatar = PlaceHolderImages.find(img => img.id === currentUser.avatarId);
 
   const navItems = [
@@ -55,6 +68,11 @@ export default function AppLayout({
     { href: '/events', icon: Calendar, label: 'Events' },
     { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
+
+  const handleLogout = () => {
+    logout();
+    router.push('/login');
+  };
 
   return (
     <SidebarProvider>
@@ -119,7 +137,7 @@ export default function AppLayout({
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuItem>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
