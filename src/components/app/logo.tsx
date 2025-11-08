@@ -10,7 +10,7 @@ export function Logo({ className }: { className?: string }) {
       )}
     >
       <ShieldCheck className="h-6 w-6 text-accent" />
-      <span>SportLink</span>
+      <span>Bask</span>
     </div>
   );
 }
