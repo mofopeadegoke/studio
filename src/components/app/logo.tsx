@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { ShieldCheck } from 'lucide-react';
 
+// Logo component
 export function Logo({ className }: { className?: string }) {
   return (
     <div
