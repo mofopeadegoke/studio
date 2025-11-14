@@ -12,7 +12,7 @@ export function Logo({ className }: { className?: string }) {
         className
       )}
     >
-      <Image src={logo} alt="Bask Logo" width={45} height={45} className="rounded-full" />
+      <Image src={logo} alt="Bask Logo" width={45} height={45} />
       <span>Bask</span>
     </div>
   );
