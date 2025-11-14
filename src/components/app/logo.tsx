@@ -1,5 +1,7 @@
 import { cn } from '@/lib/utils';
 import { ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
+import logo from "../../public/logoAlone.png";
 
 // Logo component
 export function Logo({ className }: { className?: string }) {
@@ -10,7 +12,7 @@ export function Logo({ className }: { className?: string }) {
         className
       )}
     >
-      <ShieldCheck className="h-6 w-6 text-accent" />
+      <Image src={logo} alt="Bask Logo" width={45} height={45} className="rounded-full" />
       <span>Bask</span>
     </div>
   );
