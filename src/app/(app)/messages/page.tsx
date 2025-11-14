@@ -42,17 +42,17 @@ export default function MessagesPage() {
 
               return (
                 <Link href="#" key={conv.id}>
-                  <div className={cn("flex items-center gap-3 p-4 border-b hover:bg-accent/50", conv.id === activeConversation.id && "bg-accent/80")}>
+                  <div className={cn("flex items-center gap-3 p-4 border-b hover:bg-accent/50 max-w-[96%]", conv.id === activeConversation.id && "bg-accent/80")}>
                     <Avatar>
                       <AvatarImage src={participantAvatar?.imageUrl} alt={participant.name} data-ai-hint={participantAvatar?.imageHint} />
                       <AvatarFallback>{participant.name.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 overflow-hidden">
+                    <div className="flex-1 overflow-hidden min-w-0">
                       <div className="flex justify-between items-center">
                         <p className="font-semibold truncate">{participant.name}</p>
-                        <p className="text-xs text-muted-foreground">{formatDistanceToNowStrict(new Date(lastMessage.timestamp))}</p>
+                        <p className="text-xs">{formatDistanceToNowStrict(new Date(lastMessage.timestamp))}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">{lastMessage.text}</p>
+                      <p className="text-sm truncate">{lastMessage.text}</p>
                     </div>
                   </div>
                 </Link>

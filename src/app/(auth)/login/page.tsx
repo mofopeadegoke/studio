@@ -38,6 +38,8 @@ export default function LoginPage() {
     }
   };
 
+  
+
   return (
     <div className="w-full max-w-md mx-auto p-4">
         <div className="flex justify-center mb-6">
@@ -60,14 +62,14 @@ export default function LoginPage() {
                   type="email"
                   placeholder="m@example.com"
                   defaultValue="user@example.com"
-                  disabled
+                  
                 />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
                 </div>
-                <Input id="password" type="password" defaultValue="password" disabled />
+                <Input id="password" type="password" defaultValue="password" />
               </div>
               <div className="grid gap-2">
                 <Label>Simulate login as:</Label>
