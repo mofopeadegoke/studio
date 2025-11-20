@@ -33,12 +33,23 @@ export default function LoginPage() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedUserId) {
-      login(selectedUserId);
-      router.push('/home');
+      const user = users.find(u => u.id === selectedUserId);
+      if (user?.type === 'Admin') {
+        login(selectedUserId);
+        router.push('/admin');
+      } else {
+        login(selectedUserId);
+        router.push('/home');
+      }
     }
   };
 
-  
+  const handleAdminLogin = () => {
+    login('admin');
+    router.push('/admin');
+  };
+
+  const regularUsers = users.filter(u => u.type !== 'Admin');
 
   return (
     <div className="w-full max-w-md mx-auto p-4">
@@ -62,14 +73,14 @@ export default function LoginPage() {
                   type="email"
                   placeholder="m@example.com"
                   defaultValue="user@example.com"
-                  
+                  disabled
                 />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
                 </div>
-                <Input id="password" type="password" defaultValue="password" />
+                <Input id="password" type="password" defaultValue="password" disabled />
               </div>
               <div className="grid gap-2">
                 <Label>Simulate login as:</Label>
@@ -78,7 +89,7 @@ export default function LoginPage() {
                     <SelectValue placeholder="Select a user" />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map(user => (
+                    {regularUsers.map(user => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.name} ({user.type})
                       </SelectItem>
@@ -95,6 +106,11 @@ export default function LoginPage() {
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline">
               Sign up
+            </Link>
+          </div>
+          <div className="mt-4 text-center text-sm">
+            <Link href="#" onClick={handleAdminLogin} className="underline">
+              Login as Admin
             </Link>
           </div>
         </CardContent>

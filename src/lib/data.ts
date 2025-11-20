@@ -3,6 +3,16 @@ import { subDays, subHours, formatISO } from 'date-fns';
 
 export const users: User[] = [
   {
+    id: 'admin',
+    name: 'Admin User',
+    type: 'Admin',
+    avatarId: 'scout-jane-smith',
+    bio: 'Administrator of the SportLink platform.',
+    connections: [],
+    followers: [],
+    following: [],
+  },
+  {
     id: '1',
     name: 'Alex Morgan',
     type: 'Player',

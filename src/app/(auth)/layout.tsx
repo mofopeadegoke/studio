@@ -16,7 +16,11 @@ export default function AuthLayout({
 
   useEffect(() => {
     if (currentUser) {
-      router.push('/home');
+        if (currentUser.type === 'Admin') {
+            router.push('/admin');
+        } else {
+            router.push('/home');
+        }
     }
   }, [currentUser, router]);
 
