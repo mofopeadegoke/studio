@@ -105,8 +105,8 @@ export default function SignupPage() {
                   </SelectContent>
                 </Select>
               </div>
-            <Button type="submit" className="w-full">
-              Create an account
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create an account'}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">

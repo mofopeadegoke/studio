@@ -1,4 +1,5 @@
 import type { PlaceHolderImages } from "./placeholder-images";
+import { z } from "zod";
 
 export type UserType = 'Player' | 'Team' | 'Fan' | 'Scout' | 'Admin';
 
@@ -60,3 +61,13 @@ export type LeaderboardEntry = {
   score: number;
   category: string;
 };
+
+export type RegisterSchema = z.infer<typeof registerSchema>;
+
+export const registerSchema = z.object({
+  firstName: z.string().min(2).max(100),
+  lastName: z.string().min(2).max(100),
+  email: z.string().email(),
+  password: z.string().min(8).max(100),
+  accountType: z.enum(['Player', 'Team', 'Scout', 'Fan']),
+});
