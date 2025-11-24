@@ -15,3 +15,8 @@ export async function loginUser(email: string, password: string) {
   const response = await axios.post(`${API.baseURL}/auth/login`, { email, password }, { timeout: API.timeout, withCredentials: true });
   return response.data;
 }
+
+export async function getUserProfile() {
+  const response = await axios.get(`${API.baseURL}/auth/profile`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}

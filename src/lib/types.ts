@@ -3,11 +3,30 @@ import { z } from "zod";
 
 export type UserType = 'Player' | 'Team' | 'Fan' | 'Scout' | 'Admin';
 
+// export type User = {
+//   id: string;
+//   firstName: string;
+//   lastName: string;
+//   email: string;
+//   accountType: UserType;
+//   avatarId: (typeof PlaceHolderImages)[number]['id'];
+//   isEMailVerified: boolean;
+//   bio: string;
+//   connections: string[]; // array of user IDs
+//   followers: string[]; // array of user IDs
+//   following: string[]; // array of user IDs
+//   stats?: Record<string, string | number>;
+//   profileCoverId?: (typeof PlaceHolderImages)[number]['id'];
+// };
+
 export type User = {
   id: string;
-  name: string;
-  type: UserType;
+  firstName: string;
+  lastName: string;
+  email: string;
+  accountType: UserType;
   avatarId: (typeof PlaceHolderImages)[number]['id'];
+  isEMailVerified: boolean;
   bio: string;
   connections: string[]; // array of user IDs
   followers: string[]; // array of user IDs
@@ -15,6 +34,7 @@ export type User = {
   stats?: Record<string, string | number>;
   profileCoverId?: (typeof PlaceHolderImages)[number]['id'];
 };
+
 
 export type Post = {
   id: string;
@@ -70,4 +90,11 @@ export const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(100),
   accountType: z.enum(['Player', 'Team', 'Scout', 'Fan']),
+});
+
+export type LoginSchema = z.infer<typeof loginSchema>;
+
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8).max(100),
 });

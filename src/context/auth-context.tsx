@@ -3,14 +3,50 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { User } from '@/lib/types';
-import { users } from '@/lib/data';
+import { users as dummyUsers } from '@/lib/data';
+import { getUserProfile } from '@/api/auth';
 
 interface AuthContextType {
   currentUser: User | null;
   login: (userId: string) => void;
   logout: () => void;
   loading: boolean;
+  setCurrentUser: (user: User | null) => void;
 }
+
+function getRandomDummyUser() {
+  return dummyUsers[Math.floor(Math.random() * dummyUsers.length)];
+}
+
+function mapBackendUserToFrontendUser(backendUser: any): User {
+  const randomDummy = getRandomDummyUser();
+
+  return {
+    id: backendUser.id,
+
+    // Combine real backend data with dummy data
+    name: `${backendUser.firstName} ${backendUser.lastName}`,
+    type: backendUser.accountType,
+
+    // Use dummy user's avatar instead of placeholder
+    avatarId: randomDummy.avatarId,
+
+    // Use dummy user's bio
+    bio: randomDummy.bio ?? "",
+
+    // Use dummy user's social graph
+    connections: randomDummy.connections ?? [],
+    followers: randomDummy.followers ?? [],
+    following: randomDummy.following ?? [],
+
+    // Use dummy user's stats if they exist
+    stats: randomDummy.stats ?? {},
+
+    // Use their dummy profile cover if available
+    profileCoverId: randomDummy.profileCoverId,
+  };
+}
+
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -18,22 +54,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // useEffect(() => {
+  //   try {
+  //     const storedUserId = localStorage.getItem('currentUserId');
+  //     if (storedUserId) {
+  //       const user = users.find(u => u.id === storedUserId);
+  //       setCurrentUser(user || null);
+  //     }
+  //   } catch (error) {
+  //       console.error("Could not access local storage", error);
+  //   } finally {
+  //       setLoading(false);
+  //   }
+  // }, []);
+
   useEffect(() => {
-    try {
-      const storedUserId = localStorage.getItem('currentUserId');
-      if (storedUserId) {
-        const user = users.find(u => u.id === storedUserId);
-        setCurrentUser(user || null);
-      }
-    } catch (error) {
-        console.error("Could not access local storage", error);
-    } finally {
+    const fetchUserProfile = async () => {
+      try {
+        const profile = await getUserProfile();
+        const frontendUser = mapBackendUserToFrontendUser(profile);
+        setCurrentUser(frontendUser);
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+      } finally {
         setLoading(false);
-    }
+      }
+    };
+    fetchUserProfile();
   }, []);
 
   const login = (userId: string) => {
-    const user = users.find(u => u.id === userId);
+    const user = dummyUsers.find(u => u.id === userId);
     if (user) {
       setCurrentUser(user);
       try {
@@ -54,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout, loading }}>
+    <AuthContext.Provider value={{ currentUser, login, logout, loading, setCurrentUser}}>
       {!loading && children}
     </AuthContext.Provider>
   );

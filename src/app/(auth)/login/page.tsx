@@ -21,19 +21,82 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/context/auth-context';
-import { users } from '@/lib/data';
+import { users as dummyUsers } from '@/lib/data';
 import { useState } from 'react';
 import { Logo } from '@/components/app/logo';
+import { loginUser } from '@/api/auth';
+import { LoginSchema } from '@/lib/types';
+import { loginSchema } from '@/lib/types';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { User} from '@/lib/types';
+
+
+
+function getRandomDummyUser() {
+  return dummyUsers[Math.floor(Math.random() * dummyUsers.length)];
+}
+
+function mapBackendUserToFrontendUser(backendUser: any): User {
+  const randomDummy = getRandomDummyUser();
+
+  return {
+    id: backendUser.id,
+
+    // Combine real backend data with dummy data
+    name: `${backendUser.firstName} ${backendUser.lastName}`,
+    type: backendUser.accountType,
+
+    // Use dummy user's avatar instead of placeholder
+    avatarId: randomDummy.avatarId,
+
+    // Use dummy user's bio
+    bio: randomDummy.bio ?? "",
+
+    // Use dummy user's social graph
+    connections: randomDummy.connections ?? [],
+    followers: randomDummy.followers ?? [],
+    following: randomDummy.following ?? [],
+
+    // Use dummy user's stats if they exist
+    stats: randomDummy.stats ?? {},
+
+    // Use their dummy profile cover if available
+    profileCoverId: randomDummy.profileCoverId,
+  };
+}
+
+
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, setCurrentUser} = useAuth();
   const router = useRouter();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginSchema>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  async function onSubmit(data: LoginSchema) {
+    try {
+      const response = await loginUser(data.email, data.password);
+      const frontendUser = mapBackendUserToFrontendUser(response.user);
+      setCurrentUser(frontendUser);
+      router.push('/home');
+
+    } catch (error) {
+      console.error("Error during login:", error);
+    }
+  }
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedUserId) {
-      const user = users.find(u => u.id === selectedUserId);
+      const user = dummyUsers.find(u => u.id === selectedUserId);
       if (user?.type === 'Admin') {
         login(selectedUserId);
         router.push('/admin');
@@ -49,7 +112,7 @@ export default function LoginPage() {
     router.push('/admin');
   };
 
-  const regularUsers = users.filter(u => u.type !== 'Admin');
+  const regularUsers = dummyUsers.filter(u => u.type !== 'Admin');
 
   return (
     <div className="w-full max-w-md mx-auto p-4">
@@ -64,7 +127,7 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <div className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -73,18 +136,19 @@ export default function LoginPage() {
                   type="email"
                   placeholder="m@example.com"
                   defaultValue="user@example.com"
-                  disabled
+                  required
+                  {...register('email')}
                 />
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
                 </div>
-                <Input id="password" type="password" defaultValue="password" disabled />
+                <Input id="password" type="password" defaultValue="password" required {...register('password')} />
               </div>
               <div className="grid gap-2">
                 <Label>Simulate login as:</Label>
-                <Select onValueChange={setSelectedUserId} required>
+                <Select onValueChange={setSelectedUserId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a user" />
                   </SelectTrigger>
@@ -97,7 +161,7 @@ export default function LoginPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button type="submit" className="w-full" disabled={!selectedUserId}>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
                 Login
               </Button>
             </div>
