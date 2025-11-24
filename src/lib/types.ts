@@ -3,30 +3,11 @@ import { z } from "zod";
 
 export type UserType = 'Player' | 'Team' | 'Fan' | 'Scout' | 'Admin';
 
-// export type User = {
-//   id: string;
-//   firstName: string;
-//   lastName: string;
-//   email: string;
-//   accountType: UserType;
-//   avatarId: (typeof PlaceHolderImages)[number]['id'];
-//   isEMailVerified: boolean;
-//   bio: string;
-//   connections: string[]; // array of user IDs
-//   followers: string[]; // array of user IDs
-//   following: string[]; // array of user IDs
-//   stats?: Record<string, string | number>;
-//   profileCoverId?: (typeof PlaceHolderImages)[number]['id'];
-// };
-
 export type User = {
   id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  accountType: UserType;
+  name: string;
+  type: UserType;
   avatarId: (typeof PlaceHolderImages)[number]['id'];
-  isEMailVerified: boolean;
   bio: string;
   connections: string[]; // array of user IDs
   followers: string[]; // array of user IDs
@@ -34,7 +15,6 @@ export type User = {
   stats?: Record<string, string | number>;
   profileCoverId?: (typeof PlaceHolderImages)[number]['id'];
 };
-
 
 export type Post = {
   id: string;

@@ -40,6 +40,13 @@ import {
 import { useAuth } from '@/context/auth-context';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { users as dummyUsers } from '@/lib/data';
+
+
+function getRandomDummyUser() {
+  return dummyUsers[Math.floor(Math.random() * dummyUsers.length)];
+}
+
 
 export default function AppLayout({
   children,
@@ -63,7 +70,7 @@ export default function AppLayout({
 
   const navItems = [
     { href: '/home', icon: Home, label: 'Home' },
-    { href: `/profile/${currentUser.id}`, icon: UserCircle, label: 'Profile' },
+    { href: `/profile/${getRandomDummyUser().id}`, icon: UserCircle, label: 'Profile' },
     { href: '/messages', icon: MessageSquare, label: 'Messages' },
     { href: '/events', icon: Calendar, label: 'Events' },
     { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
