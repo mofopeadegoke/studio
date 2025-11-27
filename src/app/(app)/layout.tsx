@@ -19,7 +19,6 @@ import {
   MessageSquare,
   Calendar,
   Trophy,
-  Search,
   Bell,
   Settings,
 } from 'lucide-react';
@@ -28,7 +27,6 @@ import { Logo } from '@/components/app/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,14 +37,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/auth-context';
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { users as dummyUsers } from '@/lib/data';
-
-
-function getRandomDummyUser() {
-  return dummyUsers[Math.floor(Math.random() * dummyUsers.length)];
-}
-
+import { usePathname, useRouter } from 'next/navigation';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 export default function AppLayout({
   children,
@@ -55,6 +48,8 @@ export default function AppLayout({
 }>) {
   const { currentUser, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!currentUser) {
@@ -66,11 +61,13 @@ export default function AppLayout({
     return null; // or a loading spinner
   }
 
-  const userAvatar = PlaceHolderImages.find(img => img.id === currentUser.avatarId);
+  const userAvatar = PlaceHolderImages.find(
+    img => img.id === currentUser.avatarId
+  );
 
   const navItems = [
     { href: '/home', icon: Home, label: 'Home' },
-    { href: `/profile/${getRandomDummyUser().id}`, icon: UserCircle, label: 'Profile' },
+    { href: `/profile/${currentUser.id}`, icon: UserCircle, label: 'Profile' },
     { href: '/messages', icon: MessageSquare, label: 'Messages' },
     { href: '/events', icon: Calendar, label: 'Events' },
     { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
@@ -80,6 +77,63 @@ export default function AppLayout({
     logout();
     router.push('/login');
   };
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col h-svh">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6">
+          <div className="flex-1">
+            <Logo />
+          </div>
+          <Button variant="ghost" size="icon" className="rounded-full">
+            <Bell className="h-5 w-5" />
+            <span className="sr-only">Toggle notifications</span>
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full"
+              >
+                <Avatar className="h-9 w-9">
+                  <AvatarImage
+                    src={userAvatar?.imageUrl}
+                    alt={currentUser.name}
+                    data-ai-hint={userAvatar?.imageHint}
+                  />
+                  <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem>Support</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </header>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+        <nav className="sticky bottom-0 z-30 flex h-16 items-center justify-around border-t bg-background">
+          {navItems.map(item => (
+            <Link
+              href={item.href}
+              key={item.label}
+              className={cn(
+                'flex flex-col items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary',
+                pathname === item.href && 'text-primary'
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
@@ -92,7 +146,11 @@ export default function AppLayout({
             {navItems.map(item => (
               <SidebarMenuItem key={item.label}>
                 <Link href={item.href} legacyBehavior passHref>
-                  <SidebarMenuButton asChild tooltip={item.label}>
+                  <SidebarMenuButton
+                    asChild
+                    tooltip={item.label}
+                    isActive={pathname === item.href}
+                  >
                     <a>
                       <item.icon />
                       <span>{item.label}</span>
@@ -118,12 +176,7 @@ export default function AppLayout({
         <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6">
           <SidebarTrigger className="md:hidden" />
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search..."
-              className="w-full rounded-lg bg-secondary pl-8 md:w-[280px] lg:w-[320px]"
-            />
+            {/* Search bar removed from here */}
           </div>
           <Button variant="ghost" size="icon" className="rounded-full">
             <Bell className="h-5 w-5" />
@@ -131,9 +184,16 @@ export default function AppLayout({
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full"
+              >
                 <Avatar className="h-9 w-9">
-                  <AvatarImage src={userAvatar?.imageUrl} alt={currentUser.name} data-ai-hint={userAvatar?.imageHint} />
+                  <AvatarImage
+                    src={userAvatar?.imageUrl}
+                    alt={currentUser.name}
+                    data-ai-hint={userAvatar?.imageHint}
+                  />
                   <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
                 </Avatar>
               </Button>
@@ -144,7 +204,9 @@ export default function AppLayout({
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuItem>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
+                Logout
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>

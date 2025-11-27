@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -24,14 +23,20 @@ import { useAuth } from '@/context/auth-context';
 import { users as dummyUsers } from '@/lib/data';
 import { useState } from 'react';
 import { Logo } from '@/components/app/logo';
+import { Separator } from '@/components/ui/separator';
 import { loginUser } from '@/api/auth';
 import { LoginSchema } from '@/lib/types';
 import { loginSchema } from '@/lib/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { User} from '@/lib/types';
+import { User } from '@/lib/types';
 
-
+const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
+    <title>Google</title>
+    <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.58 2.66-4.8 2.66-3.35 0-6.03-2.8-6.03-6.25s2.68-6.25 6.03-6.25c1.8 0 3.1.75 3.8 1.45l2.5-2.5C16.65 3.55 14.45 2.5 12 2.5c-5.15 0-9.25 4.15-9.25 9.25s4.1 9.25 9.25 9.25c5.3 0 9-3.9 9-9.45v-.45z" />
+  </svg>
+);
 
 function getRandomDummyUser() {
   return dummyUsers[Math.floor(Math.random() * dummyUsers.length)];
@@ -66,10 +71,8 @@ function mapBackendUserToFrontendUser(backendUser: any): User {
   };
 }
 
-
-
 export default function LoginPage() {
-  const { login, setCurrentUser} = useAuth();
+  const { login, setCurrentUser } = useAuth();
   const router = useRouter();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
@@ -116,9 +119,9 @@ export default function LoginPage() {
 
   return (
     <div className="w-full max-w-md mx-auto p-4">
-        <div className="flex justify-center mb-6">
-            <Logo />
-        </div>
+      <div className="flex justify-center mb-6">
+        <Logo />
+      </div>
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
@@ -166,6 +169,13 @@ export default function LoginPage() {
               </Button>
             </div>
           </form>
+          <Separator className="my-4" />
+          <div className="grid gap-4">
+            <Button variant="outline" className="w-full" type="button">
+              <GoogleIcon className="mr-2 h-4 w-4" />
+              Sign in with Google
+            </Button>
+          </div>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline">
