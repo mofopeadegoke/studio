@@ -30,46 +30,10 @@ import { loginSchema } from '@/lib/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { User } from '@/lib/types';
+import Image from 'next/image';
+import googleIcon from '@/public/googleLogo.png';
+import { mapBackendUserToFrontendUser } from '@/api/auth';
 
-const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" {...props}>
-    <title>Google</title>
-    <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.05 1.05-2.58 2.66-4.8 2.66-3.35 0-6.03-2.8-6.03-6.25s2.68-6.25 6.03-6.25c1.8 0 3.1.75 3.8 1.45l2.5-2.5C16.65 3.55 14.45 2.5 12 2.5c-5.15 0-9.25 4.15-9.25 9.25s4.1 9.25 9.25 9.25c5.3 0 9-3.9 9-9.45v-.45z" />
-  </svg>
-);
-
-function getRandomDummyUser() {
-  return dummyUsers[Math.floor(Math.random() * dummyUsers.length)];
-}
-
-function mapBackendUserToFrontendUser(backendUser: any): User {
-  const randomDummy = getRandomDummyUser();
-
-  return {
-    id: backendUser.id,
-
-    // Combine real backend data with dummy data
-    name: `${backendUser.firstName} ${backendUser.lastName}`,
-    type: backendUser.accountType,
-
-    // Use dummy user's avatar instead of placeholder
-    avatarId: randomDummy.avatarId,
-
-    // Use dummy user's bio
-    bio: randomDummy.bio ?? "",
-
-    // Use dummy user's social graph
-    connections: randomDummy.connections ?? [],
-    followers: randomDummy.followers ?? [],
-    following: randomDummy.following ?? [],
-
-    // Use dummy user's stats if they exist
-    stats: randomDummy.stats ?? {},
-
-    // Use their dummy profile cover if available
-    profileCoverId: randomDummy.profileCoverId,
-  };
-}
 
 export default function LoginPage() {
   const { login, setCurrentUser } = useAuth();
@@ -172,7 +136,7 @@ export default function LoginPage() {
           <Separator className="my-4" />
           <div className="grid gap-4">
             <Button variant="outline" className="w-full" type="button">
-              <GoogleIcon className="mr-2 h-4 w-4" />
+              <Image src={googleIcon} alt="Google" className="h-8 w-8" />
               Sign in with Google
             </Button>
           </div>

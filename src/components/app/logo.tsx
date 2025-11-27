@@ -1,5 +1,4 @@
 import { cn } from '@/lib/utils';
-import { ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import logo from "../../public/logoAlone.png";
 
