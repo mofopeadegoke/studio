@@ -136,7 +136,7 @@ export default function LoginPage() {
           <Separator className="my-4" />
           <div className="grid gap-4">
             <Button variant="outline" className="w-full" type="button">
-              <Image src={googleIcon} alt="Google" className="h-8 w-8" />
+              <Image src={googleIcon} alt="Google" className="h-8 w-8" onClick={() => {window.location.href = "https://bask-backend.onrender.com/api/auth/google"}}/>
               Sign in with Google
             </Button>
           </div>
