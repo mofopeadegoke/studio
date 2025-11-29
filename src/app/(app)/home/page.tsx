@@ -8,12 +8,14 @@ import { PostCard } from '@/components/app/post-card';
 import { useAuth } from '@/context/auth-context';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import Loader from '@/components/ui/loader';
 
 export default function HomePage() {
-  const { currentUser } = useAuth();
+  const { currentUser, loading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
 
-  if (!currentUser) return null;
+if (loading) return null;
+if (!currentUser) return null;
 
   const followedUserIds = currentUser.following;
   const feedPosts = posts.filter(post =>

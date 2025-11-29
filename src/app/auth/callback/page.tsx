@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { getUserProfile } from '@/api/auth';
 import { useAuth } from '@/context/auth-context';
 import { mapBackendUserToFrontendUser } from '@/api/auth';
+import Loader from '@/components/ui/loader';
 
 
 export default function AuthSuccess() {
@@ -24,5 +25,5 @@ export default function AuthSuccess() {
     loadUser();
   }, []);
 
-  return <div>Loading...</div>;
+  return <Loader />;
 }

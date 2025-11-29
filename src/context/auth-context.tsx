@@ -5,6 +5,7 @@ import { createContext, useContext, useState, ReactNode, useEffect } from 'react
 import type { User } from '@/lib/types';
 import { users as dummyUsers } from '@/lib/data';
 import { getUserProfile } from '@/api/auth';
+import Loader from '@/components/ui/loader';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -107,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{ currentUser, login, logout, loading, setCurrentUser}}>
       {!loading && children}
+      {loading && <Loader />} 
     </AuthContext.Provider>
   );
 }
