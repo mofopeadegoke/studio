@@ -8,7 +8,6 @@ import { PostCard } from '@/components/app/post-card';
 import { useAuth } from '@/context/auth-context';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import Loader from '@/components/ui/loader';
 
 export default function HomePage() {
   const { currentUser, loading } = useAuth();
@@ -25,6 +24,8 @@ if (!currentUser) return null;
   const filteredPosts = feedPosts.filter(post =>
     post.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  console.log('Current User:', currentUser);
 
   const canPost = currentUser.type === 'Player' || currentUser.type === 'Team' || currentUser.type === 'Scout';
 

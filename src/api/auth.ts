@@ -31,11 +31,11 @@ export function mapBackendUserToFrontendUser(backendUser: any): User {
   const randomDummy = getRandomDummyUser();
 
   return {
-    id: backendUser.id,
+    id: backendUser.user.id,
 
     // Combine real backend data with dummy data
-    name: `${backendUser.firstName} ${backendUser.lastName}`,
-    type: backendUser.accountType,
+    name: `${backendUser.user.firstName} ${backendUser.user.lastName}`,
+    type: backendUser.user.accountType,
 
     // Use dummy user's avatar instead of placeholder
     avatarId: randomDummy.avatarId,

@@ -23,11 +23,11 @@ function mapBackendUserToFrontendUser(backendUser: any): User {
   const randomDummy = getRandomDummyUser();
 
   return {
-    id: backendUser.id,
+    id: backendUser.user.id,
 
     // Combine real backend data with dummy data
-    name: `${backendUser.firstName} ${backendUser.lastName}`,
-    type: backendUser.accountType,
+    name: `${backendUser.user.firstName} ${backendUser.user.lastName}`,
+    type: backendUser.user.accountType,
 
     // Use dummy user's avatar instead of placeholder
     avatarId: randomDummy.avatarId,
@@ -73,7 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchUserProfile = async () => {
       try {
         const profile = await getUserProfile();
+        console.log('Fetched user profile:', profile);
         const frontendUser = mapBackendUserToFrontendUser(profile);
+        console.log('Mapped to frontend user:', frontendUser);
         setCurrentUser(frontendUser);
       } catch (error) {
         console.error("Error fetching user profile:", error);
