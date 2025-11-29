@@ -55,3 +55,8 @@ export function mapBackendUserToFrontendUser(backendUser: any): User {
     profileCoverId: randomDummy.profileCoverId,
   };
 }
+
+export async function createPost(content: FormData) {
+  const response = await axios.post(`${API.baseURL}/posts`, content, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}

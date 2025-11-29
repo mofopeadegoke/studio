@@ -73,9 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const fetchUserProfile = async () => {
       try {
         const profile = await getUserProfile();
-        console.log('Fetched user profile:', profile);
         const frontendUser = mapBackendUserToFrontendUser(profile);
-        console.log('Mapped to frontend user:', frontendUser);
         setCurrentUser(frontendUser);
       } catch (error) {
         console.error("Error fetching user profile:", error);
