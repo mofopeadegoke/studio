@@ -25,7 +25,6 @@ if (!currentUser) return null;
     post.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  console.log('Current User:', currentUser);
 
   const canPost = currentUser.type === 'Player' || currentUser.type === 'Team' || currentUser.type === 'Scout';
 
