@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { users, posts } from '@/lib/data';
+import { posts } from '@/lib/data';
 import { CreatePostForm } from '@/components/app/create-post-form';
 import { PostCard } from '@/components/app/post-card';
 import { useAuth } from '@/context/auth-context';
