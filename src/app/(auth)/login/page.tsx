@@ -33,12 +33,14 @@ import { User } from '@/lib/types';
 import Image from 'next/image';
 import googleIcon from '@/public/googleLogo.png';
 import { mapBackendUserToFrontendUser } from '@/api/auth';
+import { useToast } from '@/hooks/use-toast';
 
 
 export default function LoginPage() {
   const { login, setCurrentUser } = useAuth();
   const router = useRouter();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginSchema>({
     resolver: zodResolver(loginSchema),
@@ -51,12 +53,21 @@ export default function LoginPage() {
   async function onSubmit(data: LoginSchema) {
     try {
       const response = await loginUser(data.email, data.password);
-      const frontendUser = mapBackendUserToFrontendUser(response.user);
+      console.log("Login response:", response);
+      const frontendUser = mapBackendUserToFrontendUser(response);
       setCurrentUser(frontendUser);
       router.push('/home');
+      toast({
+          title: "Success",
+          description: "Login successful!",
+        });
 
     } catch (error) {
       console.error("Error during login:", error);
+      toast({
+        title: "Error",
+        description: "Login failed. Please try again.",
+      });
     }
   }
 
@@ -129,7 +140,7 @@ export default function LoginPage() {
                 </Select>
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                Login
+                {isSubmitting ? "Logging in..." : "Login"}
               </Button>
             </div>
           </form>
