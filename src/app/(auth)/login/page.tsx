@@ -33,12 +33,14 @@ import Image from 'next/image';
 import googleIcon from '@/public/googleLogo.png';
 import { mapBackendUserToFrontendUser } from '@/api/auth';
 import { useToast } from '@/hooks/use-toast';
+import { Eye, EyeOff } from 'lucide-react'; // Add this import
 
 
 export default function LoginPage() {
   const { login, setCurrentUser } = useAuth();
   const router = useRouter();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false); // Add this state
   const { toast } = useToast();
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginSchema>({
@@ -55,7 +57,11 @@ export default function LoginPage() {
       console.log("Login response:", response);
       const frontendUser = mapBackendUserToFrontendUser(response);
       setCurrentUser(frontendUser);
-      router.push('/home');
+      if(frontendUser.type === 'Admin') {
+        router.push('/admin');
+      } else {
+        router.push('/home');
+      }
       toast({
           title: "Success",
           description: "Login successful!",
@@ -64,6 +70,7 @@ export default function LoginPage() {
     } catch (error) {
       console.error("Error during login:", error);
       toast({
+        variant: "destructive",
         title: "Error",
         description: "Login failed. Please try again.",
       });
@@ -82,11 +89,6 @@ export default function LoginPage() {
         router.push('/home');
       }
     }
-  };
-
-  const handleAdminLogin = () => {
-    login('admin');
-    router.push('/admin');
   };
 
   const regularUsers = dummyUsers.filter(u => u.type !== 'Admin');
@@ -121,22 +123,29 @@ export default function LoginPage() {
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
                 </div>
-                <Input id="password" type="password" defaultValue="password" required {...register('password')} />
-              </div>
-              <div className="grid gap-2">
-                <Label>Simulate login as:</Label>
-                <Select onValueChange={setSelectedUserId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a user" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {regularUsers.map(user => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name} ({user.type})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"} 
+                    defaultValue="password" 
+                    required 
+                    {...register('password')} 
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting ? "Logging in..." : "Login"}
@@ -154,11 +163,6 @@ export default function LoginPage() {
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline">
               Sign up
-            </Link>
-          </div>
-          <div className="mt-4 text-center text-sm">
-            <Link href="#" onClick={handleAdminLogin} className="underline">
-              Login as Admin
             </Link>
           </div>
         </CardContent>

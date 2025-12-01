@@ -28,10 +28,14 @@ import { registerSchema } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import googleIcon from '@/public/googleLogo.png';
+import { Eye, EyeOff } from 'lucide-react'; // Add this import
+import { useState } from 'react'; // Add this import
 
 
 export default function SignupPage() {
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false); // Add this state
+  
   const {register, handleSubmit, formState: {errors, isSubmitting}} = useForm<RegisterSchema>({
     resolver: zodResolver(registerSchema), 
     defaultValues: {
@@ -89,7 +93,27 @@ export default function SignupPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" {...register('password')} />
+              <div className="relative">
+                <Input 
+                  id="password" 
+                  type={showPassword ? "text" : "password"} 
+                  {...register('password')}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
             </div>
             <div className="grid gap-2">
               <Label>I am a...</Label>
