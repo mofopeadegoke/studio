@@ -19,7 +19,7 @@ import { useAuth } from "@/context/auth-context";
 import type { BackendPost, Comment } from "@/lib/types";
 import { users as dummyUsers } from '@/lib/data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { getComments, addComment } from '@/api/auth'; 
+import { getComments, addComment, likePost, checkIfPostIsLiked } from '@/api/auth'; // Add checkIfPostIsLiked
 import { useToast } from "@/hooks/use-toast";
 
 // Transform backend comment format to frontend format
@@ -38,6 +38,8 @@ export function PostCard({ post }: { post: BackendPost }) {
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentsCount, setCommentsCount] = useState(post.commentsCount);
+  const [likesCount, setLikesCount] = useState(post.likesCount);
+  const [isLiked, setIsLiked] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -60,6 +62,20 @@ export function PostCard({ post }: { post: BackendPost }) {
     addSuffix: true,
   });
 
+  // Check if post is liked on mount
+  useEffect(() => {
+    const checkLikeStatus = async () => {
+      try {
+        const liked = await checkIfPostIsLiked(post.id);
+        setIsLiked(liked.liked);
+      } catch (error) {
+        console.error("Error checking like status:", error);
+      }
+    };
+
+    checkLikeStatus();
+  }, [post.id]);
+
   useEffect(() => {
     const fetchComments = async () => {
       if (showComments) {
@@ -67,11 +83,14 @@ export function PostCard({ post }: { post: BackendPost }) {
         try {
           const fetchedComments = await getComments(post.id);
           const transformedComments = fetchedComments.comments.map(mapBackendCommentToFrontend);
-          console.log("Transformed comments:", transformedComments);
-          
           setComments(transformedComments);
         } catch (error) {
           console.error("Error fetching comments:", error);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load comments. Please try again.",
+          });
         } finally {
           setIsLoadingComments(false);
         }
@@ -85,6 +104,23 @@ export function PostCard({ post }: { post: BackendPost }) {
     setShowComments(!showComments);
   };
 
+  const handleLikePost = async () => {
+    try {
+      await likePost(post.id);
+      
+      // Toggle like state and update count
+      setIsLiked(!isLiked);
+      setLikesCount(prevCount => isLiked ? prevCount - 1 : prevCount + 1);
+    } catch (error) {
+      console.error("Error liking post:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to like post. Please try again.",
+      });
+    }
+  };
+
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
@@ -93,8 +129,6 @@ export function PostCard({ post }: { post: BackendPost }) {
 
     try {
       const createdComment = await addComment(post.id, newComment);
-      
-      // Transform the backend response to frontend format
       const transformedComment = mapBackendCommentToFrontend(createdComment);
       
       setComments(prevComments => {
@@ -156,8 +190,8 @@ export function PostCard({ post }: { post: BackendPost }) {
 
       <CardFooter className="p-4 pt-0 flex-col items-start gap-4">
         <div className="flex justify-between w-full">
-          <Button variant="ghost" size="sm">
-            <Heart className="mr-2" /> {post.likesCount}
+          <Button variant="ghost" size="sm" onClick={handleLikePost}>
+            <Heart className={`mr-2 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} /> {likesCount}
           </Button>
           <Button 
             variant="ghost" 
@@ -184,10 +218,7 @@ export function PostCard({ post }: { post: BackendPost }) {
                 </p>
               ) : comments.length > 0 ? (
                 comments.map(comment => {
-                  // Try to find commenter in dummy users, use current user as fallback
                   const commenter = dummyUsers.find(u => u.id === comment.commenterId) || currentUser;
-                  
-                  // Get avatar with fallback
                   const commenterAvatar = PlaceHolderImages.find(img => img.id === commenter.avatarId) || dummyAvatar;
                   
                   return (
