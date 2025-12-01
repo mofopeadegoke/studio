@@ -61,7 +61,17 @@ export async function createPost(content: FormData) {
   return response.data;
 }
 
-export async function getPosts() {
+export async function getPosts({ page = 1}) {
   const response = await axios.get(`${API.baseURL}/posts/feed`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}
+
+export async function getComments(postId: string) {
+  const response = await axios.get(`${API.baseURL}/posts/${postId}/comments`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}
+
+export async function addComment(postId: string, content: string) {
+  const response = await axios.post(`${API.baseURL}/posts/${postId}/comments`, { content }, { timeout: API.timeout, withCredentials: true });
   return response.data;
 }

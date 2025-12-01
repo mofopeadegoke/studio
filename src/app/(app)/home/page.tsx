@@ -1,46 +1,88 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CreatePostForm } from '@/components/app/create-post-form';
 import { PostCard } from '@/components/app/post-card';
 import { useAuth } from '@/context/auth-context';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import axios from 'axios';
 import type { BackendPost } from '@/lib/types';
 import { getPosts } from '@/api/auth';
 
 export default function HomePage() {
   const { currentUser, loading } = useAuth();
+
   const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState<BackendPost[]>([]);
-  const [loadingPosts, setLoadingPosts] = useState(true);
 
-  // Fetch backend posts
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState<number | null>(null);
+
+  const [loadingInitial, setLoadingInitial] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  // Load initial posts
   useEffect(() => {
-    async function fetchPosts() {
+    async function fetchInitial() {
+      if (!currentUser) return;
+
       try {
-        const res = await getPosts();
+        const res = await getPosts({ page: 1 });
         setPosts(res.posts);
+        setTotalPages(res.pagination.totalPages);
       } catch (err) {
-        console.error("Failed to load posts", err);
+        console.error('Failed to load posts', err);
       } finally {
-        setLoadingPosts(false);
+        setLoadingInitial(false);
       }
     }
 
-    if (currentUser) fetchPosts();
+    fetchInitial();
   }, [currentUser]);
 
-  if (loading || loadingPosts) return null;
+  // Infinite scroll intersection observer
+  useEffect(() => {
+    if (!bottomRef.current) return;
+    if (totalPages && page >= totalPages) return; // No more posts
+
+    const observer = new IntersectionObserver(
+      async (entries) => {
+        const first = entries[0];
+        if (first.isIntersecting && !isFetchingMore) {
+          setIsFetchingMore(true);
+
+          try {
+            const nextPage = page + 1;
+            const res = await getPosts({ page: nextPage });
+
+            setPosts((prev) => [...prev, ...res.posts]);
+            setPage(nextPage);
+          } catch (err) {
+            console.error('Failed to fetch more posts', err);
+          } finally {
+            setIsFetchingMore(false);
+          }
+        }
+      },
+      { threshold: 1 }
+    );
+
+    observer.observe(bottomRef.current);
+
+    return () => observer.disconnect();
+  }, [page, totalPages, isFetchingMore]);
+
+  if (loading || loadingInitial) return null;
   if (!currentUser) return null;
 
-  // Build feed: show posts by followed users or self
+  // Filter posts based on follow list
   const followedUserIds = currentUser.following;
 
   const feedPosts = posts
     .filter(
-      p =>
+      (p) =>
         followedUserIds.includes(p.userId) ||
         p.userId === currentUser.id
     )
@@ -50,12 +92,12 @@ export default function HomePage() {
         new Date(a.createdAt).getTime()
     );
 
-  const filteredPosts = posts.filter(post =>
+  const filteredPosts = feedPosts.filter((post) =>
     post.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const canPost =
-    ["Player", "Team", "Scout"].includes(currentUser.type);
+    ['Player', 'Team', 'Scout'].includes(currentUser.type);
 
   return (
     <div className="max-w-2xl mx-auto grid gap-6">
@@ -67,16 +109,25 @@ export default function HomePage() {
           placeholder="Search posts..."
           className="pl-10"
           value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
 
       {canPost && <CreatePostForm currentUser={currentUser} />}
 
       <div className="grid gap-6">
-        {filteredPosts.map(post => (
+        {filteredPosts.map((post) => (
           <PostCard key={post.id} post={post} />
         ))}
+
+        {/* Sentinel for infinite scroll */}
+        <div ref={bottomRef} className="h-10"></div>
+
+        {isFetchingMore && (
+          <div className="flex justify-center py-4">
+            <span className="loader"></span>
+          </div>
+        )}
       </div>
     </div>
   );

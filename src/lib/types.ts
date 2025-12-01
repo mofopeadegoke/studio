@@ -101,3 +101,10 @@ export type BackendPost = {
     accountType: "Player" | "Team" | "Scout" | "Fan";
   };
 }
+
+export type Comment = {
+  id: string;
+  commenterId: string;
+  text: string;
+  createdAt: string; // ISO string
+};

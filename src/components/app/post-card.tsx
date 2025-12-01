@@ -1,3 +1,5 @@
+'use client';
+
 import Image from "next/image";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
@@ -9,27 +11,109 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { MessageCircle, Heart, Repeat2, Send } from "lucide-react";
-import type { BackendPost } from "@/lib/types";
-import {users as dummyUsers} from '@/lib/data';
+import { useState, useEffect } from "react";
+import { useAuth } from "@/context/auth-context";
+import type { BackendPost, Comment } from "@/lib/types";
+import { users as dummyUsers } from '@/lib/data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { getComments, addComment } from '@/api/auth'; 
+import { useToast } from "@/hooks/use-toast";
+
+// Transform backend comment format to frontend format
+function mapBackendCommentToFrontend(backendComment: any): Comment {
+  return {
+    id: backendComment.id,
+    commenterId: backendComment.userId,
+    text: backendComment.content,
+    createdAt: backendComment.createdAt,
+  };
+}
 
 export function PostCard({ post }: { post: BackendPost }) {
+  const { currentUser } = useAuth();
+  const [newComment, setNewComment] = useState('');
+  const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentsCount, setCommentsCount] = useState(post.commentsCount);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
   const author = post.author;
-  if (!author) return null;
+  if (!author || !currentUser) return null;
 
   const fullName = `${author.firstName} ${author.lastName}`;
   
-    const dummyUser = dummyUsers[0];
+  const dummyUser = dummyUsers[0];
   const dummyAvatar = dummyUser
     ? PlaceHolderImages.find(img => img.id === dummyUser.avatarId)
-    : PlaceHolderImages[0]; // absolute fallback
+    : PlaceHolderImages[0];
   const avatarUrl = author.profilePicture || dummyAvatar?.imageUrl;
   const postImage = post.media?.[0]?.url || null;
+
+  const currentUserAvatar = PlaceHolderImages.find(img => img.id === currentUser.avatarId);
 
   const timeAgo = formatDistanceToNow(new Date(post.createdAt), {
     addSuffix: true,
   });
+
+  useEffect(() => {
+    const fetchComments = async () => {
+      if (showComments) {
+        setIsLoadingComments(true);
+        try {
+          const fetchedComments = await getComments(post.id);
+          const transformedComments = fetchedComments.comments.map(mapBackendCommentToFrontend);
+          console.log("Transformed comments:", transformedComments);
+          
+          setComments(transformedComments);
+        } catch (error) {
+          console.error("Error fetching comments:", error);
+        } finally {
+          setIsLoadingComments(false);
+        }
+      }
+    };
+
+    fetchComments();
+  }, [showComments, post.id]);
+
+  const handleToggleComments = () => {
+    setShowComments(!showComments);
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const createdComment = await addComment(post.id, newComment);
+      
+      // Transform the backend response to frontend format
+      const transformedComment = mapBackendCommentToFrontend(createdComment);
+      
+      setComments(prevComments => {
+        const currentComments = Array.isArray(prevComments) ? prevComments : [];
+        return [...currentComments, transformedComment];
+      });
+      setCommentsCount(prevCount => prevCount + 1);
+      setNewComment('');
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to add comment. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <Card>
@@ -58,7 +142,7 @@ export function PostCard({ post }: { post: BackendPost }) {
         <p className="whitespace-pre-wrap">{post.content}</p>
 
         {postImage && (
-          <div className="mt-4 -mx-4">
+          <div className="mt-4 rounded-lg overflow-hidden border">
             <Image
               src={postImage}
               alt="Post media"
@@ -70,19 +154,94 @@ export function PostCard({ post }: { post: BackendPost }) {
         )}
       </CardContent>
 
-      <CardFooter className="p-4 pt-0 flex justify-between">
-        <Button variant="ghost" size="sm">
-          <Heart className="mr-2" /> {post.likesCount}
-        </Button>
-        <Button variant="ghost" size="sm">
-          <MessageCircle className="mr-2" /> {post.commentsCount}
-        </Button>
-        <Button variant="ghost" size="sm">
-          <Repeat2 className="mr-2" /> {post.sharesCount}
-        </Button>
-        <Button variant="ghost" size="sm">
-          <Send className="mr-2" /> Share
-        </Button>
+      <CardFooter className="p-4 pt-0 flex-col items-start gap-4">
+        <div className="flex justify-between w-full">
+          <Button variant="ghost" size="sm">
+            <Heart className="mr-2" /> {post.likesCount}
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={handleToggleComments}
+          >
+            <MessageCircle className="mr-2" /> {commentsCount}
+          </Button>
+          <Button variant="ghost" size="sm">
+            <Repeat2 className="mr-2" /> {post.sharesCount}
+          </Button>
+          <Button variant="ghost" size="sm">
+            <Send className="mr-2" /> Share
+          </Button>
+        </div>
+
+        {showComments && (
+          <>
+            <Separator />
+            <div className="w-full space-y-4">
+              {isLoadingComments ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Loading comments...
+                </p>
+              ) : comments.length > 0 ? (
+                comments.map(comment => {
+                  // Try to find commenter in dummy users, use current user as fallback
+                  const commenter = dummyUsers.find(u => u.id === comment.commenterId) || currentUser;
+                  
+                  // Get avatar with fallback
+                  const commenterAvatar = PlaceHolderImages.find(img => img.id === commenter.avatarId) || dummyAvatar;
+                  
+                  return (
+                    <div key={comment.id} className="flex items-start gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage 
+                          src={commenterAvatar?.imageUrl} 
+                          alt={commenter.name} 
+                          data-ai-hint={commenterAvatar?.imageHint} 
+                        />
+                        <AvatarFallback>{commenter.name.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <div className="bg-secondary rounded-lg px-3 py-2">
+                          <Link href={`/profile/${commenter.id}`} className="font-semibold text-sm hover:underline">
+                            {commenter.name}
+                          </Link>
+                          <p className="text-sm">{comment.text}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 pl-3">
+                          {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No comments yet. Be the first to comment!
+                </p>
+              )}
+            </div>
+            <form onSubmit={handleAddComment} className="w-full flex items-center gap-2 pt-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={currentUserAvatar?.imageUrl} alt={currentUser.name} data-ai-hint={currentUserAvatar?.imageHint} />
+                <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <Input
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Write a comment..."
+                className="h-9"
+              />
+              <Button 
+                type="submit" 
+                size="icon" 
+                className="h-9 w-9 flex-shrink-0" 
+                disabled={!newComment.trim() || isSubmitting}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          </>
+        )}
       </CardFooter>
     </Card>
   );

@@ -29,7 +29,6 @@ import { LoginSchema } from '@/lib/types';
 import { loginSchema } from '@/lib/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { User } from '@/lib/types';
 import Image from 'next/image';
 import googleIcon from '@/public/googleLogo.png';
 import { mapBackendUserToFrontendUser } from '@/api/auth';
