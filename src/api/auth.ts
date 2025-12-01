@@ -60,3 +60,8 @@ export async function createPost(content: FormData) {
   const response = await axios.post(`${API.baseURL}/posts`, content, { timeout: API.timeout, withCredentials: true });
   return response.data;
 }
+
+export async function getPosts() {
+  const response = await axios.get(`${API.baseURL}/posts/feed`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}

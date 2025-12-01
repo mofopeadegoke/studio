@@ -78,3 +78,26 @@ export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(100),
 });
+
+export type BackendPost = {
+  id: string;
+  userId: string;
+  content: string;
+  media: {
+    url: string;
+    type: "image";
+    publicId: string;
+  }[];
+  likesCount: number;
+  commentsCount: number;
+  sharesCount: number;
+  createdAt: string;
+  author: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    profilePicture: string | null;
+    email: string;
+    accountType: "Player" | "Team" | "Scout" | "Fan";
+  };
+}
