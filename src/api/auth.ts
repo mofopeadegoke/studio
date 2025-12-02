@@ -56,6 +56,35 @@ export function mapBackendUserToFrontendUser(backendUser: any): User {
   };
 }
 
+export function mapBackendUserToFrontendUserWithoutUserKey(backendUser: any): User {
+  const randomDummy = getRandomDummyUser();
+
+  return {
+    id: backendUser.id,
+
+    // Combine real backend data with dummy data
+    name: `${backendUser.firstName} ${backendUser.lastName}`,
+    type: backendUser.accountType,
+
+    // Use dummy user's avatar instead of placeholder
+    avatarId: randomDummy.avatarId,
+
+    // Use dummy user's bio
+    bio: randomDummy.bio ?? "",
+
+    // Use dummy user's social graph
+    connections: randomDummy.connections ?? [],
+    followers: randomDummy.followers ?? [],
+    following: randomDummy.following ?? [],
+
+    // Use dummy user's stats if they exist
+    stats: randomDummy.stats ?? {},
+
+    // Use their dummy profile cover if available
+    profileCoverId: randomDummy.profileCoverId,
+  };
+}
+
 export async function createPost(content: FormData) {
   const response = await axios.post(`${API.baseURL}/posts`, content, { timeout: API.timeout, withCredentials: true });
   return response.data;
@@ -83,5 +112,20 @@ export async function likePost(postId: string) {
 
 export async function checkIfPostIsLiked(postId: string) {
   const response = await axios.get(`${API.baseURL}/posts/${postId}/like`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}
+
+export async function getAllUsers() {
+  const response = await axios.get(`${API.baseURL}/admin/users`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}
+
+export async function getAllPosts() {
+  const response = await axios.get(`${API.baseURL}/admin/posts`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}
+
+export async function getAllEvents() {
+  const response = await axios.get(`${API.baseURL}/admin/events`, { timeout: API.timeout, withCredentials: true });
   return response.data;
 }

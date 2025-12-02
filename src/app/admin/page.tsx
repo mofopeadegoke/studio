@@ -1,7 +1,8 @@
-
+"use client";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, FileText, Calendar, Trophy } from "lucide-react";
-import { users, posts, events, leaderboardData } from "@/lib/data";
+import { leaderboardData } from "@/lib/data";
+import { User, BackendPost, BackendEvent } from "@/lib/types";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,16 +13,74 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { getAllUsers, mapBackendUserToFrontendUserWithoutUserKey, getAllPosts, getAllEvents } from "@/api/auth";
+import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminDashboardPage() {
 
+    const { toast } = useToast();
+    const [users, setUsers] = useState<User[]>([]);
+    const [posts, setPosts] = useState<BackendPost[]>([]);
+    const [events, setEvents] = useState<BackendEvent[]>([]);
+    
+
+
     const regularUsers = users.filter(u => u.type !== 'Admin');
+    
+    
     const totalPosts = posts.length;
     const totalEvents = events.length;
     const totalLeaderboardEntries = Object.values(leaderboardData).reduce((acc, curr) => acc + curr.length, 0);
 
     const recentUsers = regularUsers.slice(0, 5);
     const recentPosts = posts.slice(0, 5);
+
+    useEffect(() => {
+        try {
+            const fetchUsers = async () => {
+                const data = await getAllUsers();
+                const mappedUsers = data.users.map((backendUser: any) => mapBackendUserToFrontendUserWithoutUserKey(backendUser));
+                setUsers(mappedUsers);
+            };
+            fetchUsers();
+        } catch (error) {
+            console.error("Error fetching users:", error);
+            toast({
+                title: "Error",
+                description: "Failed to fetch users.",
+                variant: "destructive",
+            });
+        }
+        try {
+            const fetchPosts = async () => {
+                const data = await getAllPosts();
+                setPosts(data.posts);
+            };
+            fetchPosts();
+        } catch (error) {
+            console.error("Error fetching posts:", error);
+            toast({
+                title: "Error",
+                description: "Failed to fetch posts.",
+                variant: "destructive",
+            });
+        }
+        try {
+            const fetchEvents = async () => {
+                const data = await getAllEvents();
+                setEvents(data.events);
+            };
+            fetchEvents();
+        } catch (error) {
+            console.error("Error fetching events:", error);
+            toast({
+                title: "Error",
+                description: "Failed to fetch events.",
+                variant: "destructive",
+            });
+        }
+    }, []);
 
     return (
         <div className="grid gap-6">
@@ -108,7 +167,7 @@ export default function AdminDashboardPage() {
                             </TableHeader>
                             <TableBody>
                                 {recentPosts.map(post => {
-                                    const author = users.find(u => u.id === post.authorId);
+                                    const author = users.find(u => u.id === post.userId);
                                     return (
                                         <TableRow key={post.id}>
                                             <TableCell>{author?.name ?? 'Unknown'}</TableCell>

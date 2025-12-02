@@ -79,15 +79,17 @@ export const loginSchema = z.object({
   password: z.string().min(8).max(100),
 });
 
+export type MediaItem = {
+  url: string;
+  type: 'image' | 'video';
+  publicId: string;
+};
+
 export type BackendPost = {
   id: string;
   userId: string;
   content: string;
-  media: {
-    url: string;
-    type: "image";
-    publicId: string;
-  }[];
+  media: MediaItem[];
   likesCount: number;
   commentsCount: number;
   sharesCount: number;
@@ -107,4 +109,19 @@ export type Comment = {
   commenterId: string;
   text: string;
   createdAt: string; // ISO string
+};
+
+export type BackendEvent = {
+  id: string;
+  title: string;
+  description: string;
+  date: string; // ISO string
+  location: string;
+  media: MediaItem[];
+  organizerId: string;
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
+  organizer: User;
+  attendees: User[];
+  attendeesCount: number;
 };
