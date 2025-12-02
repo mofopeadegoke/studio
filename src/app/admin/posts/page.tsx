@@ -1,8 +1,6 @@
-
 'use client'
 
-import { useState } from 'react';
-import { posts as initialPosts, users } from '@/lib/data';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -20,38 +18,117 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Post } from '@/lib/types';
+import { BackendPost, Comment } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDistanceToNow } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { getAllPosts, getComments, getAllUsers, mapBackendUserToFrontendUserWithoutUserKey, deleteComment } from '@/api/auth';
+import { useToast } from '@/hooks/use-toast';
+import { User } from '@/lib/types';
+
+// Transform backend comment format to frontend format
+function mapBackendCommentToFrontend(backendComment: any): Comment {
+  return {
+    id: backendComment.id,
+    commenterId: backendComment.userId,
+    text: backendComment.content,
+    createdAt: backendComment.createdAt,
+  };
+}
 
 export default function AdminPostsPage() {
-  const [posts, setPosts] = useState(initialPosts);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [posts, setPosts] = useState<BackendPost[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedPost, setSelectedPost] = useState<BackendPost | null>(null);
+  const [selectedPostComments, setSelectedPostComments] = useState<Comment[]>([]);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const { toast } = useToast();
 
-  const handleViewClick = (post: Post) => {
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const data = await getAllPosts();
+        setPosts(data.posts);
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch posts.",
+          variant: "destructive",
+        });
+      }
+    };
+    fetchPosts();
+    const fetchUsers = async () => {
+      try {
+        const data = await getAllUsers();
+        const mappedUsers = data.users.map((backendUser: any) => mapBackendUserToFrontendUserWithoutUserKey(backendUser));
+        const filteredUsers = mappedUsers.filter((u: User) => u.type !== 'Admin');
+        setUsers(filteredUsers);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch users.",
+          variant: "destructive",
+        });
+      }
+    };
+    fetchUsers();
+    
+  }, []);
+
+  const handleViewClick = async (post: BackendPost) => {
     setSelectedPost(post);
     setIsViewDialogOpen(true);
+    setSelectedPostComments([]); // Clear previous comments
+    
+    // Fetch comments for this post
+    setIsLoadingComments(true);
+    try {
+      const fetchedComments = await getComments(post.id);
+      const transformedComments = fetchedComments.comments.map(mapBackendCommentToFrontend);
+      setSelectedPostComments(transformedComments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    } finally {
+      setIsLoadingComments(false);
+    }
   };
 
-  const handleDeleteComment = (postId: string, commentId: string) => {
-    setPosts(posts.map(p => {
-        if (p.id === postId) {
-            return {
-                ...p,
-                comments: p.comments.filter(c => c.id !== commentId)
-            }
-        }
-        return p;
-    }));
-    if (selectedPost?.id === postId) {
-        setSelectedPost({
-            ...selectedPost,
-            comments: selectedPost.comments.filter(c => c.id !== commentId)
-        });
+  const deleteParticularComment = async (commentId: string) => {
+    try {
+      await deleteComment(commentId);
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete comment.",
+        variant: "destructive",
+      });
     }
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    // Remove from local state
+    setSelectedPostComments(prevComments => 
+      prevComments.filter(c => c.id !== commentId)
+    );
+    
+    // Update the post's comment count in the posts list
+    if (selectedPost) {
+      setPosts(prevPosts => 
+        prevPosts.map(p => 
+          p.id === selectedPost.id 
+            ? { ...p, commentsCount: p.commentsCount - 1 }
+            : p
+        )
+      );
+    }
+    
+    deleteParticularComment(commentId);
   };
   
   return (
@@ -75,14 +152,16 @@ export default function AdminPostsPage() {
                 </TableHeader>
                 <TableBody>
                 {posts.map(post => {
-                    const author = users.find(u => u.id === post.authorId);
+                    const author = post.author;
+                    const authorName = author ? `${author.firstName} ${author.lastName}` : 'Unknown';
+                    
                     return (
                     <TableRow key={post.id}>
-                        <TableCell className="font-medium">{author?.name ?? 'Unknown'}</TableCell>
+                        <TableCell className="font-medium">{authorName}</TableCell>
                         <TableCell className="max-w-xs truncate">{post.content}</TableCell>
                         <TableCell>{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}</TableCell>
-                        <TableCell>{post.likes}</TableCell>
-                        <TableCell>{post.comments.length}</TableCell>
+                        <TableCell>{post.likesCount}</TableCell>
+                        <TableCell>{post.commentsCount}</TableCell>
                         <TableCell className="text-right">
                         <Button variant="outline" size="sm" onClick={() => handleViewClick(post)}>
                             View Details
@@ -112,20 +191,32 @@ export default function AdminPostsPage() {
                 <div>
                     <Label className="font-semibold">Comments</Label>
                     <div className="mt-2 space-y-2 max-h-60 overflow-y-auto">
-                        {selectedPost.comments.length > 0 ? selectedPost.comments.map(comment => {
+                        {isLoadingComments ? (
+                          <p className="text-sm text-muted-foreground">Loading comments...</p>
+                        ) : selectedPostComments.length > 0 ? (
+                          selectedPostComments.map(comment => {
                             const commenter = users.find(u => u.id === comment.commenterId);
                             return (
                                 <Card key={comment.id}>
                                     <CardContent className="p-3 flex justify-between items-start">
                                         <div>
-                                            <p className="font-semibold">{commenter?.name}</p>
+                                            <p className="font-semibold">{commenter?.name || 'Unknown User'}</p>
                                             <p className="text-sm text-muted-foreground">{comment.text}</p>
                                         </div>
-                                        <Button variant="destructive" size="sm" onClick={() => handleDeleteComment(selectedPost.id, comment.id)}>Delete</Button>
+                                        <Button 
+                                          variant="destructive" 
+                                          size="sm" 
+                                          onClick={() => handleDeleteComment(comment.id)}
+                                        >
+                                          Delete
+                                        </Button>
                                     </CardContent>
                                 </Card>
-                            )
-                        }) : <p className="text-sm text-muted-foreground">No comments yet.</p>}
+                            );
+                          })
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No comments yet.</p>
+                        )}
                     </div>
                 </div>
 

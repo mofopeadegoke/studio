@@ -129,3 +129,8 @@ export async function getAllEvents() {
   const response = await axios.get(`${API.baseURL}/admin/events`, { timeout: API.timeout, withCredentials: true });
   return response.data;
 }
+
+export async function deleteComment(commentId: string) {
+  const response = await axios.delete(`${API.baseURL}/comments/${commentId}`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}
