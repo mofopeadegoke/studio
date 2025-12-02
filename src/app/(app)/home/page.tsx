@@ -31,6 +31,7 @@ export default function HomePage() {
       try {
         const res = await getPosts({ page: 1 });
         setPosts(res.posts);
+        console.log("Initial posts:", posts);
         setTotalPages(res.pagination.totalPages);
       } catch (err) {
         console.error('Failed to load posts', err);
@@ -80,18 +81,7 @@ export default function HomePage() {
   // Filter posts based on follow list
   const followedUserIds = currentUser.following;
 
-  const feedPosts = posts
-    .filter(
-      (p) =>
-        followedUserIds.includes(p.userId) ||
-        p.userId === currentUser.id
-    )
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() -
-        new Date(a.createdAt).getTime()
-    );
-
+  const feedPosts = posts;
   const filteredPosts = feedPosts.filter((post) =>
     post.content.toLowerCase().includes(searchQuery.toLowerCase())
   );

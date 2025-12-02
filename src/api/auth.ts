@@ -5,7 +5,7 @@ import { User } from '@/lib/types';
 
 const API= {
     baseURL: 'https://bask-backend.onrender.com/api',
-    timeout: 60000
+    timeout: 20000
 }
 
 export async function registerUser(data: RegisterSchema) {
