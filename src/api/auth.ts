@@ -134,3 +134,8 @@ export async function deleteComment(commentId: string) {
   const response = await axios.delete(`${API.baseURL}/comments/${commentId}`, { timeout: API.timeout, withCredentials: true });
   return response.data;
 }
+
+export async function createEvent(data: FormData) {
+  const response = await axios.post(`${API.baseURL}/events`, data, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}
