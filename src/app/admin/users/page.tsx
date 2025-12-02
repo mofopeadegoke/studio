@@ -25,11 +25,29 @@ import { User } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { getAllUsers, mapBackendUserToFrontendUserWithoutUserKey } from '@/api/auth';
+import { useEffect } from 'react';
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState(initialUsers.filter(u => u.type !== 'Admin'));
+  const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await getAllUsers();
+        const mappedUsers = data.users.map((backendUser: any) => mapBackendUserToFrontendUserWithoutUserKey(backendUser));
+        const filteredUsers = mappedUsers.filter((u: User) => u.type !== 'Admin');
+        setUsers(filteredUsers);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    fetchUsers();
+  }, []);
+
 
   const handleEditClick = (user: User) => {
     setSelectedUser({ ...user });
