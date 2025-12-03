@@ -111,17 +111,28 @@ export type Comment = {
   createdAt: string; // ISO string
 };
 
-export type BackendEvent = {
+export type BackendUser = {
   id: string;
-  title: string;
-  description: string;
-  date: string; // ISO string
-  location: string;
-  media: MediaItem[];
-  organizerId: string;
-  createdAt: string; // ISO string
-  updatedAt: string; // ISO string
-  organizer: User;
-  attendees: User[];
-  attendeesCount: number;
-};
+  firstName: string;
+  lastName: string;
+  email: string;
+  accountType: "Player" | "Team" | "Scout" | "Fan" | "Admin";
+  profilePicture: string | null;
+  googleId?: string; 
+  isEmailVerified: boolean;
+}
+
+  export type BackendEvent = {
+    id: string;
+    title: string;
+    description: string;
+    date: string; // ISO string
+    location: string;
+    media: MediaItem[];
+    organizerId: string;
+    createdAt: string; // ISO string
+    updatedAt: string; // ISO string
+    organizer: BackendUser;
+    attendees: BackendUser[];
+    attendeesCount: number;
+  };
