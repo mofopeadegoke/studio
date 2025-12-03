@@ -3,24 +3,22 @@
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import type { Event } from '@/lib/types';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, CheckCircle } from 'lucide-react';
+import { BackendEvent } from '@/lib/types';
 
-export function EventCard({ event, currentUserId }: { event: Event; currentUserId: string }) {
+export function EventCard({ event, currentUserId }: { event: BackendEvent; currentUserId: string }) {
   const [isRegistered, setIsRegistered] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-    setIsRegistered(event.registeredUsers.includes(currentUserId));
-  }, [event.registeredUsers, currentUserId]);
+    setIsRegistered(event.attendees.some(att => att.id === currentUserId)); 
+  }, [event.attendees, currentUserId]);
 
-  const bannerImage = PlaceHolderImages.find(img => img.id === event.bannerId);
 
-  if (!isClient) {
+  if (!isClient) {  
     return (
         <Card className="flex flex-col">
             <div className="w-full h-40 bg-muted animate-pulse"></div>
@@ -33,7 +31,7 @@ export function EventCard({ event, currentUserId }: { event: Event; currentUserI
                 <div className="h-4 w-3/4 bg-muted animate-pulse rounded"></div>
             </CardContent>
             <CardFooter>
-                 <div className="h-10 w-full bg-muted animate-pulse rounded"></div>
+                 <div className="h-10 w-full bg-muted animate-pulse rounded"></div> 
             </CardFooter>
         </Card>
     );
@@ -46,13 +44,12 @@ export function EventCard({ event, currentUserId }: { event: Event; currentUserI
   return (
     <Card className="flex flex-col">
       <div className="relative w-full h-40">
-        {bannerImage && (
+        {event.media[0] && (
           <Image
-            src={bannerImage.imageUrl}
+            src={event.media[0].url}
             alt={event.title}
             fill
             className="object-cover rounded-t-lg"
-            data-ai-hint={bannerImage.imageHint}
           />
         )}
       </div>

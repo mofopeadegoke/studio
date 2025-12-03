@@ -21,6 +21,7 @@ import {
   Trophy,
   ShieldCheck,
   Settings,
+  Star
 } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from '@/components/app/logo';
@@ -65,6 +66,7 @@ export default function AdminLayout({
     { href: '/admin/users', icon: Users, label: 'Users' },
     { href: '/admin/posts', icon: FileText, label: 'Posts' },
     { href: '/admin/events', icon: Calendar, label: 'Events' },
+    { href: '/admin/challenges', icon: Star, label: 'Challenges' },
     { href: '/admin/leaderboard', icon: Trophy, label: 'Leaderboard' },
   ];
 

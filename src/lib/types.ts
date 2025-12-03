@@ -136,3 +136,10 @@ export type BackendUser = {
     attendees: BackendUser[];
     attendeesCount: number;
   };
+
+  export type Challenge = {
+    id: string;
+    title: string;
+    description: string;
+    hashtag: string;
+};

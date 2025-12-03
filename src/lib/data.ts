@@ -1,4 +1,4 @@
-import type { User, Post, Event, Conversation, LeaderboardEntry } from './types';
+import type { User, Post, Event, Conversation, LeaderboardEntry, Challenge } from './types';
 import { subDays, subHours, formatISO } from 'date-fns';
 
 export const users: User[] = [
@@ -226,3 +226,18 @@ export const leaderboardData: { [key: string]: LeaderboardEntry[] } = {
     { rank: 5, userId: '6', score: 80, category: 'Skill Competition' },
   ],
 };
+
+export const challenges: Challenge[] = [
+    {
+        id: 'challenge-1',
+        title: '3-Point Contest',
+        description: 'Show us your skills from beyond the arc. Post a video of your best 3-point shots.',
+        hashtag: '#3PointChallenge'
+    },
+    {
+        id: 'challenge-2',
+        title: 'Trick Shot Challenge',
+        description: 'Get creative and show off your most impressive trick shots. The more imaginative, the better!',
+        hashtag: '#TrickShotChallenge'
+    }
+];
