@@ -23,6 +23,11 @@ export async function getUserProfile() {
   return response.data;
 }
 
+export async function getUserPosts(userId: string) {
+  const response = await axios.get(`${API.baseURL}/posts/user/${userId}`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}
+
 export function getRandomDummyUser() {
   return dummyUsers[Math.floor(Math.random() * dummyUsers.length)];
 }
