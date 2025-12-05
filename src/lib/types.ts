@@ -143,3 +143,24 @@ export type BackendUser = {
     description: string;
     hashtag: string;
 };
+
+export type BackendMessage = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+  updatedAt: string;
+  sender: BackendUser;
+};
+
+export type BackendConversation = {
+  id: string;
+  name: string | null;
+  isGroup: boolean;
+  createdAt: string;
+  updatedAt: string;
+  participants: BackendUser[];
+  messages: BackendMessage[];
+};

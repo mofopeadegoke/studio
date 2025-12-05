@@ -6,6 +6,7 @@ import type { User } from '@/lib/types';
 import { users as dummyUsers } from '@/lib/data';
 import { getUserProfile } from '@/api/auth';
 import Loader from '@/components/ui/loader';
+import { connectSocket, disconnectSocket } from '@/lib/socket';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -74,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const profile = await getUserProfile();
         const frontendUser = mapBackendUserToFrontendUser(profile);
+        connectSocket();
         setCurrentUser(frontendUser);
       } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -100,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCurrentUser(null);
     try {
       localStorage.removeItem('currentUserId');
+      disconnectSocket();
     } catch (error) {
         console.error("Could not access local storage", error);
     }

@@ -139,3 +139,13 @@ export async function createEvent(data: FormData) {
   const response = await axios.post(`${API.baseURL}/events`, data, { timeout: API.timeout, withCredentials: true });
   return response.data;
 }
+
+export async function getUserConversations() {
+  const response = await axios.get(`${API.baseURL}/conversations`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}
+
+export async function getConversationMessages(conversationId: string) {
+  const response = await axios.get(`${API.baseURL}/conversations/${conversationId}/messages`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}

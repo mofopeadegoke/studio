@@ -33,14 +33,15 @@ import Image from 'next/image';
 import googleIcon from '@/public/googleLogo.png';
 import { mapBackendUserToFrontendUser } from '@/api/auth';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff } from 'lucide-react'; // Add this import
+import { Eye, EyeOff } from 'lucide-react';
+import { connectSocket } from '@/lib/socket';
 
 
 export default function LoginPage() {
   const { login, setCurrentUser } = useAuth();
   const router = useRouter();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false); // Add this state
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginSchema>({
@@ -56,6 +57,7 @@ export default function LoginPage() {
       const response = await loginUser(data.email, data.password);
       console.log("Login response:", response);
       const frontendUser = mapBackendUserToFrontendUser(response);
+      connectSocket();
       setCurrentUser(frontendUser);
       if(frontendUser.type === 'Admin') {
         router.push('/admin');
