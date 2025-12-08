@@ -14,6 +14,7 @@ export type User = {
   following: string[]; // array of user IDs
   stats?: Record<string, string | number>;
   profileCoverId?: (typeof PlaceHolderImages)[number]['id'];
+  token?: string;
 };
 
 export type Post = {

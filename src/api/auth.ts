@@ -5,7 +5,7 @@ import { User } from '@/lib/types';
 
 const API= {
     baseURL: 'https://bask-backend.onrender.com/api',
-    timeout: 20000
+    timeout: 30000
 }
 
 export async function registerUser(data: RegisterSchema) {
@@ -20,6 +20,11 @@ export async function loginUser(email: string, password: string) {
 
 export async function getUserProfile() {
   const response = await axios.get(`${API.baseURL}/auth/profile`, { timeout: API.timeout, withCredentials: true });
+  return response.data;
+}
+
+export async function getAllUsersNonAdmin() {
+  const response = await axios.get(`${API.baseURL}/users  `, { timeout: API.timeout, withCredentials: true });
   return response.data;
 }
 
@@ -58,6 +63,7 @@ export function mapBackendUserToFrontendUser(backendUser: any): User {
 
     // Use their dummy profile cover if available
     profileCoverId: randomDummy.profileCoverId,
+    token: backendUser.token,
   };
 }
 
@@ -150,7 +156,12 @@ export async function getUserConversations() {
   return response.data;
 }
 
-export async function getConversationMessages(conversationId: string) {
+export async function getConversationMessages(conversationId: string | null) {
   const response = await axios.get(`${API.baseURL}/conversations/${conversationId}/messages`, { timeout: API.timeout, withCredentials: true });
   return response.data;
+}
+
+export function getAuthToken() {
+  const response = localStorage.getItem('authToken');
+  return response;
 }

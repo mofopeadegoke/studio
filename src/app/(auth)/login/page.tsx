@@ -58,6 +58,7 @@ export default function LoginPage() {
       console.log("Login response:", response);
       const frontendUser = mapBackendUserToFrontendUser(response);
       connectSocket();
+      localStorage.setItem('authToken', response.token);
       setCurrentUser(frontendUser);
       if(frontendUser.type === 'Admin') {
         router.push('/admin');
