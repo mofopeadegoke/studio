@@ -72,12 +72,10 @@ export default function Messages() {
     
     // Find other participant
     const other = conv.participants?.find(p => {
-      // Convert both to string for comparison
       return String(p.id) !== String(currentUser?.id);
     });
     
     if (!other) {
-      // If no other participant found, it might be a group or self-conversation
       return 'Loading...';
     }
     
@@ -86,20 +84,27 @@ export default function Messages() {
       return `${other.firstName} ${other.lastName}`;
     }
     
-    
     if (other.email) return other.email.split('@')[0];
     
     return 'Loading...';
   };
 
-  // Get participant avatar
+  // Get participant avatar - checks for profilePicture, returns null if not available
   const getParticipantAvatar = (participant: any) => {
+    if (participant?.profilePicture) {
+      return participant.profilePicture;
+    }
     return null;
   };
 
-  // Get user avatar for user picker
+  // Get user avatar for user picker - checks for avatarId and maps to placeholder
   const getUserAvatar = (user: User) => {
-    const userPlaceholder = PlaceHolderImages.find(img => img.id === user.avatarId);
+    if (user.avatarId) {
+      const userPlaceholder = PlaceHolderImages.find(img => img.id === user.avatarId);
+      if (userPlaceholder?.imageUrl) {
+        return userPlaceholder.imageUrl;
+      }
+    }
     return null;
   };
 
@@ -207,7 +212,6 @@ export default function Messages() {
       setCreatingConversation(false);
       
       // Now try to enrich the conversation with user data
-      // This will run after nonAdminUsers are loaded
       setTimeout(() => {
         setConversations((prev) => {
           return prev.map(conv => {
@@ -475,6 +479,7 @@ export default function Messages() {
                   const participant = conv.participants?.find(p => p.id !== currentUser.id);
                   const displayName = getConversationDisplayName(conv);
                   const lastMessage = conv.messages?.[conv.messages.length - 1];
+                  const avatarUrl = participant ? getParticipantAvatar(participant) : null;
 
                   return (
                     <button
@@ -487,11 +492,9 @@ export default function Messages() {
                         conv.id === activeConversationId && "bg-accent/80"
                       )}>
                         <Avatar>
-                          <AvatarImage 
-                            
-                          />
+                          {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
                           <AvatarFallback>
-                            {displayName === 'Loading...' ? '...' : displayName.charAt(0)}
+                            {displayName === 'Loading...' ? '...' : displayName.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 overflow-hidden">
@@ -530,11 +533,14 @@ export default function Messages() {
                 {/* Conversation Header */}
                 <div className="flex items-center gap-3 p-3 border-b">
                   <Avatar>
-                    <AvatarImage 
-                      
-                    />
+                    {getParticipantAvatar(otherParticipant) && (
+                      <AvatarImage 
+                        src={getParticipantAvatar(otherParticipant)!} 
+                        alt={getConversationDisplayName(activeConversation)} 
+                      />
+                    )}
                     <AvatarFallback>
-                      {getConversationDisplayName(activeConversation).charAt(0)}
+                      {getConversationDisplayName(activeConversation).charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <h2 className="text-lg font-semibold font-headline">
@@ -562,17 +568,27 @@ export default function Messages() {
                   ) : (
                     <div className="flex flex-col gap-4">
                       {messages.map((message) => {
-                        const isCurrentUser = message.senderId === currentUser.id;
+                        // FIXED: Proper comparison to determine if message is from current user
+                        const isCurrentUser = String(message.senderId) === String(currentUser.id);
                         const sender = message.sender;
-                        const senderName = sender ? `${sender.firstName} ${sender.lastName}` : 'Unknown';
+                        const senderName = sender ? `${sender.firstName || ''} ${sender.lastName || ''}`.trim() : 'Unknown';
+                        const senderAvatar = sender ? getParticipantAvatar(sender) : null;
 
                         return (
-                          <div key={message.id} className={cn("flex items-end gap-3", isCurrentUser && 'flex-row-reverse')}>
+                          <div 
+                            key={message.id} 
+                            className={cn(
+                              "flex items-end gap-3",
+                              isCurrentUser ? 'flex-row-reverse' : 'flex-row'
+                            )}
+                          >
                             {!isCurrentUser && (
                               <Avatar className="h-8 w-8">
-                               
+                                {senderAvatar && (
+                                  <AvatarImage src={senderAvatar} alt={senderName} />
+                                )}
                                 <AvatarFallback>
-                                  {senderName.charAt(0)}
+                                  {senderName.charAt(0).toUpperCase() || 'U'}
                                 </AvatarFallback>
                               </Avatar>
                             )}
@@ -585,7 +601,10 @@ export default function Messages() {
                               )}
                             >
                               <p>{message.content}</p>
-                              <p className={cn("text-xs mt-1", isCurrentUser ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                              <p className={cn(
+                                "text-xs mt-1", 
+                                isCurrentUser ? "text-primary-foreground/70" : "text-muted-foreground"
+                              )}>
                                 {format(new Date(message.createdAt), "h:mm a")}
                               </p>
                             </div>
@@ -597,11 +616,14 @@ export default function Messages() {
                       {userTyping && (
                         <div className="flex items-end gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage 
-                             
-                            />
+                            {getParticipantAvatar(otherParticipant) && (
+                              <AvatarImage 
+                                src={getParticipantAvatar(otherParticipant)!} 
+                                alt={getConversationDisplayName(activeConversation)} 
+                              />
+                            )}
                             <AvatarFallback>
-                              {getConversationDisplayName(activeConversation).charAt(0)}
+                              {getConversationDisplayName(activeConversation).charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div className="bg-secondary rounded-lg rounded-bl-none px-4 py-2">
@@ -669,26 +691,30 @@ export default function Messages() {
               <ScrollArea className="h-48">
                 <CommandEmpty>No users found.</CommandEmpty>
                 <CommandGroup>
-                  {nonAdminUsers.map((user) => (
-                    <CommandItem
-                      key={user.id}
-                      value={`${user.name} ${user.type}`}
-                      onSelect={() => handleStartNewConversation(user.id)}
-                      disabled={creatingConversation}
-                      className="cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <Avatar className="h-8 w-8">
-                          
-                          <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-xs text-muted-foreground">{user.type}</p>
+                  {nonAdminUsers.map((user) => {
+                    const userAvatarUrl = getUserAvatar(user);
+                    
+                    return (
+                      <CommandItem
+                        key={user.id}
+                        value={`${user.name} ${user.type}`}
+                        onSelect={() => handleStartNewConversation(user.id)}
+                        disabled={creatingConversation}
+                        className="cursor-pointer"
+                      >
+                        <div className="flex items-center gap-3 w-full">
+                          <Avatar className="h-8 w-8">
+                            {userAvatarUrl && <AvatarImage src={userAvatarUrl} alt={user.name} />}
+                            <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{user.name}</p>
+                            <p className="text-xs text-muted-foreground">{user.type}</p>
+                          </div>
                         </div>
-                      </div>
-                    </CommandItem>
-                  ))}
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               </ScrollArea>
             </CommandList>
