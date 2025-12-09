@@ -112,7 +112,7 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
           {/* Cover */}
           <div className="h-48 bg-muted relative">
             <Image
-              src={coverUrl}
+              src={avatarUrl}
               alt="cover"
               fill
               className="object-cover"
