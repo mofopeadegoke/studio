@@ -167,8 +167,8 @@ body {
       @media screen and (max-width: 768px) {
         .loader {
           margin-left: 37%;
-          margin-top: 100%;
-          width: 100px;
-          height: 100px;
+          margin-top: 96%;
+          width: 60px;
+          height: 60px;
         }
       }
