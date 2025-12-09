@@ -26,8 +26,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import googleIcon from '@/public/googleLogo.png';
 import { Eye, EyeOff } from 'lucide-react'; // Add this import
 import { useState } from 'react'; // Add this import
 
@@ -124,18 +122,13 @@ export default function SignupPage() {
                 <SelectContent>
                   <SelectItem value="Player">Player</SelectItem>
                   <SelectItem value="Team">Team</SelectItem>
-                  <SelectItem value="Scout">Scout</SelectItem>
+                  <SelectItem value="Scout">Scout / Coach / Academy</SelectItem>
                   <SelectItem value="Fan">Fan</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Creating...' : 'Create an account'}
-            </Button>
-            <Separator className="my-2" />
-            <Button variant="outline" className="w-full" type="button" onClick={() => {window.location.href = "https://bask-backend.onrender.com/api/auth/google"}}>
-              <Image src={googleIcon} alt="Google" className="h-8 w-8" />
-              Sign up with Google
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">

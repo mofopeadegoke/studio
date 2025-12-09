@@ -19,7 +19,7 @@ import { useAuth } from "@/context/auth-context";
 import type { BackendPost, Comment } from "@/lib/types";
 import { users as dummyUsers } from '@/lib/data';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { getComments, addComment, likePost, checkIfPostIsLiked } from '@/api/auth'; // Add checkIfPostIsLiked
+import { getComments, addComment, likePost, checkIfPostIsLiked } from '@/api/auth';
 import { useToast } from "@/hooks/use-toast";
 
 // Transform backend comment format to frontend format
@@ -28,7 +28,7 @@ function mapBackendCommentToFrontend(backendComment: any): Comment {
     id: backendComment.id,
     commenterId: backendComment.userId,
     text: backendComment.content,
-    createdAt: backendComment.createdAt,
+    createdAt: backendComment.createdAt || new Date().toISOString(), // Fallback to current time if missing
   };
 }
 
@@ -53,12 +53,15 @@ export function PostCard({ post }: { post: BackendPost }) {
   const dummyAvatar = dummyUser
     ? PlaceHolderImages.find(img => img.id === dummyUser.avatarId)
     : PlaceHolderImages[0];
-  const avatarUrl = author.profilePicture || dummyAvatar?.imageUrl;
+  
+  // Check if author has profilePicture, otherwise use fallback
+  const avatarUrl = author.profilePicture || null;
   const postImage = post.media?.[0]?.url || null;
 
   const currentUserAvatar = PlaceHolderImages.find(img => img.id === currentUser.avatarId);
 
-  const timeAgo = formatDistanceToNow(new Date(post.createdAt), {
+  const parsedDate = new Date(Date.parse(post.createdAt));
+  const timeAgo = formatDistanceToNow(parsedDate, {
     addSuffix: true,
   });
 
@@ -129,14 +132,33 @@ export function PostCard({ post }: { post: BackendPost }) {
 
     try {
       const createdComment = await addComment(post.id, newComment);
-      const transformedComment = mapBackendCommentToFrontend(createdComment);
+      console.log("Created comment response:", createdComment); // Debug log
       
+      // Transform the comment and ensure it has the current user's ID
+      const transformedComment: Comment = {
+        id: createdComment.id,
+        commenterId: currentUser.id, // Use current user's ID since they made the comment
+        text: createdComment.content || newComment, // Fallback to the comment text we sent
+        createdAt: createdComment.createdAt || new Date().toISOString(),
+      };
+      
+      console.log("Transformed comment:", transformedComment); // Debug log
+      
+      // Immediately add to state - this will trigger re-render
       setComments(prevComments => {
         const currentComments = Array.isArray(prevComments) ? prevComments : [];
-        return [...currentComments, transformedComment];
+        const updatedComments = [...currentComments, transformedComment];
+        console.log("Updated comments array:", updatedComments); // Debug log
+        return updatedComments;
       });
+      
       setCommentsCount(prevCount => prevCount + 1);
       setNewComment('');
+      
+      toast({
+        title: "Success",
+        description: "Comment added successfully!",
+      });
     } catch (error) {
       console.error("Error creating comment:", error);
       toast({
@@ -154,8 +176,8 @@ export function PostCard({ post }: { post: BackendPost }) {
       <CardHeader className="p-4">
         <div className="flex items-start gap-4">
           <Avatar>
-            <AvatarImage src={avatarUrl} alt={fullName} />
-            <AvatarFallback>{author.firstName[0]}</AvatarFallback>
+            {avatarUrl && <AvatarImage src={avatarUrl} alt={fullName} />}
+            <AvatarFallback>{author.firstName[0].toUpperCase()}</AvatarFallback>
           </Avatar>
           <div className="grid gap-0.5 text-sm">
             <Link
@@ -219,17 +241,26 @@ export function PostCard({ post }: { post: BackendPost }) {
               ) : comments.length > 0 ? (
                 comments.map(comment => {
                   const commenter = dummyUsers.find(u => u.id === comment.commenterId) || currentUser;
-                  const commenterAvatar = PlaceHolderImages.find(img => img.id === commenter.avatarId) || dummyAvatar;
+                  const commenterAvatar = PlaceHolderImages.find(img => img.id === commenter.avatarId);
+                  
+                  // FIXED: Parse the comment's createdAt, not the post's date
+                  const commentDate = comment.createdAt 
+                    ? new Date(Date.parse(comment.createdAt))
+                    : new Date();
+                  const commentTimeAgo = formatDistanceToNow(commentDate, { addSuffix: true });
+                  
+                  console.log("Comment data:", comment); // Debug log
                   
                   return (
                     <div key={comment.id} className="flex items-start gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage 
-                          src={commenterAvatar?.imageUrl} 
-                          alt={commenter.name} 
-                          data-ai-hint={commenterAvatar?.imageHint} 
-                        />
-                        <AvatarFallback>{commenter.name.charAt(0)}</AvatarFallback>
+                        {commenterAvatar?.imageUrl && (
+                          <AvatarImage 
+                            src={commenterAvatar.imageUrl} 
+                            alt={commenter.name} 
+                          />
+                        )}
+                        <AvatarFallback>{commenter.name.charAt(0).toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1">
                         <div className="bg-secondary rounded-lg px-3 py-2">
@@ -239,7 +270,7 @@ export function PostCard({ post }: { post: BackendPost }) {
                           <p className="text-sm">{comment.text}</p>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 pl-3">
-                          {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                          {commentTimeAgo}
                         </p>
                       </div>
                     </div>
@@ -253,8 +284,13 @@ export function PostCard({ post }: { post: BackendPost }) {
             </div>
             <form onSubmit={handleAddComment} className="w-full flex items-center gap-2 pt-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={currentUserAvatar?.imageUrl} alt={currentUser.name} data-ai-hint={currentUserAvatar?.imageHint} />
-                <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+                {currentUserAvatar?.imageUrl && (
+                  <AvatarImage 
+                    src={currentUserAvatar.imageUrl} 
+                    alt={currentUser.name} 
+                  />
+                )}
+                <AvatarFallback>{currentUser.name.charAt(0).toUpperCase()}</AvatarFallback>
               </Avatar>
               <Input
                 value={newComment}

@@ -12,13 +12,6 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useAuth } from '@/context/auth-context';
 import { users as dummyUsers } from '@/lib/data';
 import { useState } from 'react';
@@ -29,8 +22,6 @@ import { LoginSchema } from '@/lib/types';
 import { loginSchema } from '@/lib/types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Image from 'next/image';
-import googleIcon from '@/public/googleLogo.png';
 import { mapBackendUserToFrontendUser } from '@/api/auth';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff } from 'lucide-react';
@@ -155,13 +146,6 @@ export default function LoginPage() {
               </Button>
             </div>
           </form>
-          <Separator className="my-4" />
-          <div className="grid gap-4">
-            <Button variant="outline" className="w-full" type="button" onClick={() => {window.location.href = "https://bask-backend.onrender.com/api/auth/google"}}>
-              <Image src={googleIcon} alt="Google" className="h-8 w-8"/>
-              Sign in with Google
-            </Button>
-          </div>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline">

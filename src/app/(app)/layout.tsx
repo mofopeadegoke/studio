@@ -67,10 +67,10 @@ export default function AppLayout({
 
   const navItems = [
     { href: '/home', icon: Home, label: 'Home' },
-    { href: `/profile/${currentUser.id}`, icon: UserCircle, label: 'Profile' },
     { href: '/messages', icon: MessageSquare, label: 'Messages' },
-    { href: '/events', icon: Calendar, label: 'Events' },
     { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
+    { href: '/events', icon: Calendar, label: 'Events' },
+    { href: `/profile/${currentUser.id}`, icon: UserCircle, label: 'Profile' },
   ];
 
   const handleLogout = () => {
