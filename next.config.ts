@@ -44,6 +44,7 @@ const nextConfig: NextConfig = {
       'genkit',
       '@opentelemetry/instrumentation',
       'require-in-the-middle',
+      'axios',
     ],
   },
 };
