@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, CheckCircle } from 'lucide-react';
 import { BackendEvent } from '@/lib/types';
 import Link from 'next/link';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export function EventCard({ event, currentUserId }: { event: BackendEvent; currentUserId: string }) {
   const [isRegistered, setIsRegistered] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
+  console.log(event.media)
   useEffect(() => {
     setIsClient(true);
     setIsRegistered(false); 
@@ -47,7 +49,7 @@ export function EventCard({ event, currentUserId }: { event: BackendEvent; curre
       <div className="relative w-full h-40">
         {event.media[0] && (
           <Image
-            src={event.media[0].url}
+            src={event.media[0].url || PlaceHolderImages[6].imageUrl}
             alt={event.title}
             fill
             className="object-cover rounded-t-lg"
