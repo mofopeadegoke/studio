@@ -37,17 +37,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: [
-      'express',
-      '@genkit-ai/core',
-      'genkit',
-      '@opentelemetry/instrumentation',
-      'require-in-the-middle',
-    ],
-  },
-
-  transpilePackages: ['axios'],
 };
 
 export default nextConfig;
