@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Socket } from "socket.io-client";
 import { format, formatDistanceToNowStrict } from "date-fns";
-import { Loader2, Send, Pencil } from "lucide-react";
+import { Loader2, Send, Pencil, LoaderCircle, LucideLoader } from "lucide-react";
 
 import { getSocket } from "@/lib/socket";
 import { getConversationMessages, getUserConversations, getAllUsersNonAdmin, mapBackendUserToFrontendUserWithoutUserKey } from "@/api/auth";
@@ -28,6 +28,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import Loader from "@/components/ui/loader";
 
 export default function Messages() {
   const router = useRouter();
@@ -337,6 +338,7 @@ export default function Messages() {
 
       try {
         const data = await getConversationMessages(activeConversationId);
+        console.log(data)
         setMessages(data || []);
       } catch (error) {
         console.error("Error fetching messages:", error);
@@ -559,7 +561,7 @@ export default function Messages() {
                 <ScrollArea className="flex-1 p-4">
                   {loadingMessages ? (
                     <div className="flex justify-center py-10">
-                      <Loader2 className="animate-spin" />
+                      <LucideLoader className="h-6 w-6 animate-spin text-muted-foreground" />
                     </div>
                   ) : messages.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
