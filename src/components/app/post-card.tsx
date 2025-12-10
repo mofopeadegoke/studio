@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { MessageCircle, Heart, Repeat2, Send } from "lucide-react";
+import { MessageCircle, Heart, Send } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/auth-context";
 import type { BackendPost, Comment } from "@/lib/types";
@@ -28,7 +28,7 @@ function mapBackendCommentToFrontend(backendComment: any): Comment {
     id: backendComment.id,
     commenterId: backendComment.userId,
     text: backendComment.content,
-    createdAt: backendComment.createdAt || new Date().toISOString(), // Fallback to current time if missing
+    createdAt: backendComment.createdAt || new Date().toISOString(),
   };
 }
 
@@ -48,11 +48,6 @@ export function PostCard({ post }: { post: BackendPost }) {
   if (!author || !currentUser) return null;
 
   const fullName = `${author.firstName} ${author.lastName}`;
-  
-  const dummyUser = dummyUsers[0];
-  const dummyAvatar = dummyUser
-    ? PlaceHolderImages.find(img => img.id === dummyUser.avatarId)
-    : PlaceHolderImages[0];
   
   // Check if author has profilePicture, otherwise use fallback
   const avatarUrl = author.profilePicture || null;
@@ -132,23 +127,23 @@ export function PostCard({ post }: { post: BackendPost }) {
 
     try {
       const createdComment = await addComment(post.id, newComment);
-      console.log("Created comment response:", createdComment); // Debug log
+      console.log("Created comment response:", createdComment);
       
-      // Transform the comment and ensure it has the current user's ID
-      const transformedComment: Comment = {
-        id: createdComment.id,
-        commenterId: currentUser.id, // Use current user's ID since they made the comment
-        text: createdComment.content || newComment, // Fallback to the comment text we sent
+      // Create the new comment object - use the text we just typed
+      const newCommentObj: Comment = {
+        id: createdComment.id || `c${Date.now()}`,
+        commenterId: currentUser.id,
+        text: newComment, // Use the text directly from input
         createdAt: createdComment.createdAt || new Date().toISOString(),
       };
       
-      console.log("Transformed comment:", transformedComment); // Debug log
+      console.log("New comment to add:", newCommentObj);
       
-      // Immediately add to state - this will trigger re-render
+      // Immediately add to state
       setComments(prevComments => {
         const currentComments = Array.isArray(prevComments) ? prevComments : [];
-        const updatedComments = [...currentComments, transformedComment];
-        console.log("Updated comments array:", updatedComments); // Debug log
+        const updatedComments = [...currentComments, newCommentObj];
+        console.log("Updated comments array:", updatedComments);
         return updatedComments;
       });
       
@@ -211,7 +206,7 @@ export function PostCard({ post }: { post: BackendPost }) {
       </CardContent>
 
       <CardFooter className="p-4 pt-0 flex-col items-start gap-4">
-        <div className="flex justify-between w-full">
+        <div className="flex gap-2 w-full">
           <Button variant="ghost" size="sm" onClick={handleLikePost}>
             <Heart className={`mr-2 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} /> {likesCount}
           </Button>
@@ -221,12 +216,6 @@ export function PostCard({ post }: { post: BackendPost }) {
             onClick={handleToggleComments}
           >
             <MessageCircle className="mr-2" /> {commentsCount}
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Repeat2 className="mr-2" /> {post.sharesCount}
-          </Button>
-          <Button variant="ghost" size="sm">
-            <Send className="mr-2" /> Share
           </Button>
         </div>
 
@@ -243,13 +232,11 @@ export function PostCard({ post }: { post: BackendPost }) {
                   const commenter = dummyUsers.find(u => u.id === comment.commenterId) || currentUser;
                   const commenterAvatar = PlaceHolderImages.find(img => img.id === commenter.avatarId);
                   
-                  // FIXED: Parse the comment's createdAt, not the post's date
+                  // Parse the comment's createdAt
                   const commentDate = comment.createdAt 
                     ? new Date(Date.parse(comment.createdAt))
                     : new Date();
                   const commentTimeAgo = formatDistanceToNow(commentDate, { addSuffix: true });
-                  
-                  console.log("Comment data:", comment); // Debug log
                   
                   return (
                     <div key={comment.id} className="flex items-start gap-3">

@@ -13,13 +13,15 @@ import { enhancePost } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createPost } from '@/api/auth';
 
+const MAX_UPLOAD_SIZE = 32 * 1024 * 1024; // 32MB
+
 export function CreatePostForm({ currentUser }: { currentUser: User }) {
   const [content, setContent] = useState('');
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [isPending, startTransition] = useTransition();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const userAvatar = PlaceHolderImages.find(img => img.id === currentUser.avatarId);
@@ -51,36 +53,32 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
     });
   };
   
-  const handleImageSelect = () => {
-    imageInputRef.current?.click();
-  }
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setImageFile(file); // Store the actual file
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      const currentTotalSize = mediaFiles.reduce((acc, f) => acc + f.size, 0);
+      if (currentTotalSize + file.size > MAX_UPLOAD_SIZE) {
+        toast({
+          variant: 'destructive',
+          title: 'Upload Limit Exceeded',
+          description: `You cannot upload more than 32MB of media.`,
+        });
+        return;
+      }
+      setMediaFiles(prev => [...prev, file]);
     }
   };
 
-  const handleRemoveImage = () => {
-    setImagePreview(null);
-    setImageFile(null);
-    if (imageInputRef.current) {
-      imageInputRef.current.value = '';
-    }
+  const removeMedia = (index: number) => {
+    setMediaFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handlePost = async () => {
-    if (!content.trim() && !imageFile) {
+    if (!content.trim() && mediaFiles.length === 0) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Please write something or add an image.",
+        description: "Please write something or add media.",
       });
       return;
     }
@@ -88,13 +86,14 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
     setIsSubmitting(true);
 
     try {
-      // Create FormData for sending both text and image
+      // Create FormData for sending both text and media
       const formData = new FormData();
       formData.append('content', content);
       
-      if (imageFile) {
-        formData.append('media', imageFile);
-      }
+      // Append all media files
+      mediaFiles.forEach((file) => {
+        formData.append('media', file);
+      });
 
       const response = await createPost(formData);
       
@@ -105,10 +104,12 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
 
       // Clear form after successful post
       setContent('');
-      setImagePreview(null);
-      setImageFile(null);
+      setMediaFiles([]);
       if (imageInputRef.current) {
         imageInputRef.current.value = '';
+      }
+      if (videoInputRef.current) {
+        videoInputRef.current.value = '';
       }
 
     } catch (error) {
@@ -138,25 +139,35 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
               value={content}
               onChange={e => setContent(e.target.value)}
             />
-            {imagePreview && (
-              <div className="relative mb-2">
-                <Image
-                  src={imagePreview}
-                  alt="Post preview"
-                  width={600}
-                  height={400}
-                  className="rounded-lg object-cover w-full aspect-video"
-                />
-                <Button 
-                  variant="destructive" 
-                  size="icon" 
-                  className="absolute top-2 right-2 h-7 w-7 rounded-full"
-                  onClick={handleRemoveImage}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+            <div className="grid gap-2 mb-2">
+              {mediaFiles.map((file, index) => (
+                <div key={index} className="relative">
+                  {file.type.startsWith('image/') ? (
+                    <Image
+                      src={URL.createObjectURL(file)}
+                      alt="Post preview"
+                      width={600}
+                      height={400}
+                      className="rounded-lg object-cover w-full aspect-video"
+                    />
+                  ) : (
+                    <video
+                      src={URL.createObjectURL(file)}
+                      controls
+                      className="rounded-lg object-cover w-full aspect-video"
+                    />
+                  )}
+                  <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    className="absolute top-2 right-2 h-7 w-7 rounded-full"
+                    onClick={() => removeMedia(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
             <div className="flex justify-between items-center">
               <div className="flex gap-2 text-muted-foreground">
                 <input
@@ -166,10 +177,17 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
                   className="hidden"
                   accept="image/*"
                 />
-                <Button variant="ghost" size="icon" onClick={handleImageSelect}>
+                <input
+                  type="file"
+                  ref={videoInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="video/*"
+                />
+                <Button variant="ghost" size="icon" onClick={() => imageInputRef.current?.click()}>
                   <ImageIcon className="h-5 w-5" />
                 </Button>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" onClick={() => videoInputRef.current?.click()}>
                   <VideoIcon className="h-5 w-5" />
                 </Button>
               </div>
