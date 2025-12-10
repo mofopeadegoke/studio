@@ -3,7 +3,7 @@
 
 import { EventCard } from '@/components/app/event-card';
 import { useAuth } from '@/context/auth-context';
-import { getAllEvents } from '@/api/auth';
+import { getAllEventsPublic } from '@/api/auth';
 import { useState, useEffect } from 'react';
 import { challenges } from '@/lib/data';
 import type { BackendEvent } from '@/lib/types';
@@ -17,7 +17,7 @@ export default function EventsPage() {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      const data = await getAllEvents();
+      const data = await getAllEventsPublic();
       setEvents(data.events);
     };
     fetchEvents();

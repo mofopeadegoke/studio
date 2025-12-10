@@ -7,6 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Calendar, MapPin, CheckCircle } from 'lucide-react';
 import { BackendEvent } from '@/lib/types';
+import Link from 'next/link';
 
 export function EventCard({ event, currentUserId }: { event: BackendEvent; currentUserId: string }) {
   const [isRegistered, setIsRegistered] = useState(false);
@@ -14,7 +15,7 @@ export function EventCard({ event, currentUserId }: { event: BackendEvent; curre
 
   useEffect(() => {
     setIsClient(true);
-    setIsRegistered(event.attendees.some(att => att.id === currentUserId)); 
+    setIsRegistered(false); 
   }, [event.attendees, currentUserId]);
 
 
@@ -70,16 +71,21 @@ export function EventCard({ event, currentUserId }: { event: BackendEvent; curre
         </div>
       </CardContent>
       <CardFooter>
-        <Button className="w-full" onClick={handleRegister} variant={isRegistered ? 'secondary' : 'default'}>
-          {isRegistered ? (
-            <>
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Registered
-            </>
-          ) : (
-            'Register'
-          )}
-        </Button>
+        <Link
+          href="https://paystack.shop/pay/-zp2fr1bn8"
+          className="
+            inline-flex items-center justify-center
+            whitespace-nowrap rounded-md text-sm font-medium
+            ring-offset-background transition-colors
+            focus-visible:outline-none focus-visible:ring-2
+            focus-visible:ring-ring focus-visible:ring-offset-2
+            disabled:pointer-events-none disabled:opacity-50
+            h-10 px-4 py-2 w-full
+            bg-primary text-primary-foreground hover:bg-primary/90
+          "
+        >
+          Register
+        </Link>
       </CardFooter>
     </Card>
   );

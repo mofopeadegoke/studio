@@ -165,3 +165,8 @@ export function getAuthToken() {
   const response = localStorage.getItem('authToken');
   return response;
 }
+
+export async function getAllEventsPublic() {
+  const response = await axios.get(`${API.baseURL}/events`, { timeout: API.timeout });
+  return response.data;
+}
