@@ -51,7 +51,9 @@ export function PostCard({ post }: { post: BackendPost }) {
   
   // Check if author has profilePicture, otherwise use fallback
   const avatarUrl = author.profilePicture || null;
-  const postImage = post.media?.[0]?.url || null;
+  const isVideo = post.media?.[0]?.type === 'video';
+  const isImage = post.media?.[0]?.type === 'image';
+  const mediaUrl = post.media?.[0]?.url || null;
 
   const currentUserAvatar = PlaceHolderImages.find(img => img.id === currentUser.avatarId);
 
@@ -192,15 +194,29 @@ export function PostCard({ post }: { post: BackendPost }) {
       <CardContent className="p-4 pt-0">
         <p className="whitespace-pre-wrap">{post.content}</p>
 
-        {postImage && (
+        {mediaUrl && isImage && (
           <div className="mt-4 rounded-lg overflow-hidden border">
             <Image
-              src={postImage}
-              alt="Post media"
+              src={mediaUrl}
+              alt="Post image"
               width={800}
               height={600}
               className="w-full object-cover aspect-video"
             />
+          </div>
+        )}
+
+        {mediaUrl && isVideo && (
+          <div className="mt-4 rounded-lg overflow-hidden border">
+            <video
+              width={800}
+              height={600}
+              className="w-full object-cover aspect-video"
+              controls
+            >
+              <source src={mediaUrl} type="video/mp4"/>
+              <source src={mediaUrl} type="video/ogg"/>
+            </video>
           </div>
         )}
       </CardContent>
