@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Socket } from "socket.io-client";
 import { format, formatDistanceToNowStrict } from "date-fns";
-import { Loader2, Send, Pencil, LoaderCircle, LucideLoader } from "lucide-react";
+import { Send, Pencil, LucideLoader, Users as UsersIcon, UserPlus, Check, X } from "lucide-react";
 
 import { getSocket } from "@/lib/socket";
 import { getConversationMessages, getUserConversations, getAllUsersNonAdmin, mapBackendUserToFrontendUserWithoutUserKey } from "@/api/auth";
@@ -18,7 +18,7 @@ import type { User, BackendConversation, BackendMessage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Command,
@@ -28,7 +28,10 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import Loader from "@/components/ui/loader";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+
+type NewMessageView = 'list' | 'group-form';
 
 export default function Messages() {
   const router = useRouter();
@@ -49,6 +52,11 @@ export default function Messages() {
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [nonAdminUsers, setNonAdminUsers] = useState<User[]>([]);
   const [isNewMessageDialogOpen, setIsNewMessageDialogOpen] = useState(false);
+
+  // Group chat state
+  const [newMessageView, setNewMessageView] = useState<NewMessageView>('list');
+  const [groupParticipants, setGroupParticipants] = useState<User[]>([]);
+  const [groupName, setGroupName] = useState('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -142,6 +150,64 @@ export default function Messages() {
     };
   };
 
+  // Group chat functions
+  const toggleGroupParticipant = (user: User) => {
+    setGroupParticipants(prev => 
+      prev.some(p => p.id === user.id) 
+        ? prev.filter(p => p.id !== user.id)
+        : [...prev, user]
+    );
+  };
+  
+  const resetGroupForm = () => {
+    setGroupParticipants([]);
+    setGroupName('');
+    setNewMessageView('list');
+  };
+
+  const handleCreateGroup = async () => {
+    if (!groupName || groupParticipants.length < 2) {
+      toast({
+        variant: "destructive",
+        title: "Incomplete Information",
+        description: "Please provide a group name and select at least two participants.",
+      });
+      return;
+    }
+
+    if (!socket) {
+      toast({
+        title: 'Error',
+        description: 'Connection not established. Please refresh the page.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setCreatingConversation(true);
+
+    try {
+      // Emit create_group_conversation event with group name and participant IDs
+      const participantIds = groupParticipants.map(p => p.id);
+      
+      socket.emit("create_group_conversation", {
+        name: groupName,
+        recipientIds: participantIds,
+      });
+
+      // The conversation_created event will handle the rest
+      console.log(`Creating group "${groupName}" with participants:`, participantIds);
+    } catch (error) {
+      console.error("Error creating group:", error);
+      setCreatingConversation(false);
+      toast({
+        title: 'Error',
+        description: 'Failed to create group conversation. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -211,6 +277,7 @@ export default function Messages() {
       // Close dialog and reset creating state
       setIsNewMessageDialogOpen(false);
       setCreatingConversation(false);
+      resetGroupForm();
       
       // Now try to enrich the conversation with user data
       setTimeout(() => {
@@ -234,7 +301,7 @@ export default function Messages() {
       
       toast({
         title: 'Success',
-        description: 'Conversation ready!',
+        description: conversation.isGroup ? 'Group created!' : 'Conversation ready!',
       });
     };
 
@@ -458,7 +525,12 @@ export default function Messages() {
 
   return (
     <div className="h-[calc(100vh-57px-2rem)] md:h-[calc(100vh-57px-3rem)]">
-      <Dialog open={isNewMessageDialogOpen} onOpenChange={setIsNewMessageDialogOpen}>
+      <Dialog open={isNewMessageDialogOpen} onOpenChange={(isOpen) => {
+        setIsNewMessageDialogOpen(isOpen);
+        if (!isOpen) {
+          resetGroupForm();
+        }
+      }}>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 h-full border rounded-lg overflow-hidden">
           {/* Conversations List */}
           <div className="md:col-span-1 lg:col-span-1 border-r flex flex-col">
@@ -494,10 +566,16 @@ export default function Messages() {
                         conv.id === activeConversationId && "bg-accent/80"
                       )}>
                         <Avatar>
-                          {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
-                          <AvatarFallback>
-                            {displayName === 'Loading...' ? '...' : displayName.charAt(0).toUpperCase()}
-                          </AvatarFallback>
+                          {conv.isGroup ? (
+                            <AvatarFallback><UsersIcon className="h-5 w-5" /></AvatarFallback>
+                          ) : (
+                            <>
+                              {avatarUrl && <AvatarImage src={avatarUrl} alt={displayName} />}
+                              <AvatarFallback>
+                                {displayName === 'Loading...' ? '...' : displayName.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </>
+                          )}
                         </Avatar>
                         <div className="flex-1 overflow-hidden">
                           <div className="flex justify-between items-center">
@@ -530,24 +608,33 @@ export default function Messages() {
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <p>Creating conversation...</p>
               </div>
-            ) : activeConversation && otherParticipant ? (
+            ) : activeConversation ? (
               <>
                 {/* Conversation Header */}
                 <div className="flex items-center gap-3 p-3 border-b">
-                  <Avatar>
-                    {getParticipantAvatar(otherParticipant) && (
-                      <AvatarImage 
-                        src={getParticipantAvatar(otherParticipant)!} 
-                        alt={getConversationDisplayName(activeConversation)} 
-                      />
-                    )}
-                    <AvatarFallback>
-                      {getConversationDisplayName(activeConversation).charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <h2 className="text-lg font-semibold font-headline">
-                    {getConversationDisplayName(activeConversation)}
-                  </h2>
+                  {activeConversation.isGroup ? (
+                    <>
+                      <Avatar><AvatarFallback><UsersIcon className="h-5 w-5" /></AvatarFallback></Avatar>
+                      <h2 className="text-lg font-semibold font-headline">{activeConversation.name}</h2>
+                    </>
+                  ) : otherParticipant && (
+                    <>
+                      <Avatar>
+                        {getParticipantAvatar(otherParticipant) && (
+                          <AvatarImage 
+                            src={getParticipantAvatar(otherParticipant)!} 
+                            alt={getConversationDisplayName(activeConversation)} 
+                          />
+                        )}
+                        <AvatarFallback>
+                          {getConversationDisplayName(activeConversation).charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <h2 className="text-lg font-semibold font-headline">
+                        {getConversationDisplayName(activeConversation)}
+                      </h2>
+                    </>
+                  )}
                   <div className="ml-auto text-sm">
                     {socketConnected ? (
                       <span className="text-green-600">● Connected</span>
@@ -570,7 +657,6 @@ export default function Messages() {
                   ) : (
                     <div className="flex flex-col gap-4">
                       {messages.map((message) => {
-                        // FIXED: Proper comparison to determine if message is from current user
                         const isCurrentUser = String(message.senderId) === String(currentUser.id);
                         const sender = message.sender;
                         const senderName = sender ? `${sender.firstName || ''} ${sender.lastName || ''}`.trim() : 'Unknown';
@@ -602,6 +688,9 @@ export default function Messages() {
                                   : 'bg-secondary rounded-bl-none'
                               )}
                             >
+                              {!isCurrentUser && activeConversation.isGroup && (
+                                <p className="text-xs font-semibold mb-1">{senderName}</p>
+                              )}
                               <p>{message.content}</p>
                               <p className={cn(
                                 "text-xs mt-1", 
@@ -615,7 +704,7 @@ export default function Messages() {
                       })}
                       
                       {/* Typing Indicator */}
-                      {userTyping && (
+                      {userTyping && !activeConversation.isGroup && otherParticipant && (
                         <div className="flex items-end gap-3">
                           <Avatar className="h-8 w-8">
                             {getParticipantAvatar(otherParticipant) && (
@@ -680,47 +769,137 @@ export default function Messages() {
         </div>
 
         {/* New Message Dialog */}
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>New Message</DialogTitle>
-            <DialogDescription>
-              Select a user to start a conversation with.
-            </DialogDescription>
-          </DialogHeader>
-          <Command className="rounded-lg border shadow-md">
-            <CommandInput placeholder="Search for a user..." />
-            <CommandList>
-              <ScrollArea className="h-48">
-                <CommandEmpty>No users found.</CommandEmpty>
-                <CommandGroup>
-                  {nonAdminUsers.map((user) => {
-                    const userAvatarUrl = getUserAvatar(user);
-                    
-                    return (
-                      <CommandItem
-                        key={user.id}
-                        value={`${user.name} ${user.type}`}
-                        onSelect={() => handleStartNewConversation(user.id)}
-                        disabled={creatingConversation}
-                        className="cursor-pointer"
-                      >
-                        <div className="flex items-center gap-3 w-full">
-                          <Avatar className="h-8 w-8">
-                            {userAvatarUrl && <AvatarImage src={userAvatarUrl} alt={user.name} />}
-                            <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+        <DialogContent className="max-w-lg">
+          {newMessageView === 'list' && (
+            <>
+              <DialogHeader>
+                <DialogTitle>New Message</DialogTitle>
+                <DialogDescription>
+                  Select a user to start a conversation or create a new group.
+                </DialogDescription>
+              </DialogHeader>
+              <Command className="rounded-lg border shadow-md">
+                <CommandInput placeholder="Search for a user..." />
+                <CommandList>
+                  <ScrollArea className="h-48">
+                    <CommandGroup>
+                      <CommandItem onSelect={() => setNewMessageView('group-form')} className="cursor-pointer">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8 bg-muted text-muted-foreground flex items-center justify-center">
+                            <UserPlus className="h-5 w-5" />
                           </Avatar>
-                          <div>
-                            <p className="font-medium">{user.name}</p>
-                            <p className="text-xs text-muted-foreground">{user.type}</p>
-                          </div>
+                          <p className="font-medium">Create Group Chat</p>
                         </div>
                       </CommandItem>
-                    );
-                  })}
-                </CommandGroup>
-              </ScrollArea>
-            </CommandList>
-          </Command>
+                    </CommandGroup>
+                    <Separator />
+                    <CommandGroup heading="Users">
+                      <CommandEmpty>No users found.</CommandEmpty>
+                      {nonAdminUsers.map((user) => {
+                        const userAvatarUrl = getUserAvatar(user);
+                        
+                        return (
+                          <CommandItem
+                            key={user.id}
+                            value={`${user.name} ${user.type}`}
+                            onSelect={() => handleStartNewConversation(user.id)}
+                            disabled={creatingConversation}
+                            className="cursor-pointer"
+                          >
+                            <div className="flex items-center gap-3 w-full">
+                              <Avatar className="h-8 w-8">
+                                {userAvatarUrl && <AvatarImage src={userAvatarUrl} alt={user.name} />}
+                                <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">{user.name}</p>
+                                <p className="text-xs text-muted-foreground">{user.type}</p>
+                              </div>
+                            </div>
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </ScrollArea>
+                </CommandList>
+              </Command>
+            </>
+          )}
+          {newMessageView === 'group-form' && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Create Group Chat</DialogTitle>
+                <DialogDescription>
+                  Select participants and give your group a name.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4">
+                <div className="space-y-1">
+                  <Label htmlFor="group-name">Group Name</Label>
+                  <Input 
+                    id="group-name" 
+                    value={groupName} 
+                    onChange={(e) => setGroupName(e.target.value)} 
+                    placeholder="e.g. Fantasy League Crew" 
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Participants</Label>
+                  <Command className="rounded-lg border shadow-md">
+                    <CommandInput placeholder="Search for users to add..." />
+                    <CommandList>
+                      <ScrollArea className="h-40">
+                        <CommandEmpty>No users found.</CommandEmpty>
+                        <CommandGroup>
+                          {nonAdminUsers.map((user) => {
+                            const avatar = getUserAvatar(user);
+                            const isSelected = groupParticipants.some(p => p.id === user.id);
+                            return (
+                              <CommandItem
+                                key={user.id}
+                                value={`${user.name} ${user.type}`}
+                                onSelect={() => toggleGroupParticipant(user)}
+                                className="cursor-pointer"
+                              >
+                                <div className={cn(
+                                  "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", 
+                                  isSelected ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
+                                )}>
+                                  <Check className={cn("h-4 w-4")} />
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-8 w-8">
+                                    {avatar && <AvatarImage src={avatar} alt={user.name} />}
+                                    <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-xs text-muted-foreground">{user.type}</p>
+                                  </div>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                        </CommandGroup>
+                      </ScrollArea>
+                    </CommandList>
+                  </Command>
+                </div>
+              </div>
+              <DialogFooter className="mt-5 gap-2">
+                <Button variant="outline" onClick={resetGroupForm}>Back</Button>
+                <Button 
+                  onClick={handleCreateGroup} 
+                  disabled={!groupName || groupParticipants.length < 2 || creatingConversation}
+                  className={cn(
+                    (!groupName || groupParticipants.length < 2) && 'opacity-50 cursor-not-allowed'
+                  )}
+                >
+                  {creatingConversation ? 'Creating...' : 'Create Group'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>
