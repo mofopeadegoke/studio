@@ -20,6 +20,9 @@ export function EventCard({ event, currentUserId }: { event: BackendEvent; curre
     setIsRegistered(false); 
   }, [event.attendees, currentUserId]);
 
+  // Get image URL with proper fallback
+  const imageUrl = event?.media?.[0]?.url || PlaceHolderImages[6].imageUrl;
+  console.log("Event image URL:", imageUrl);
 
   if (!isClient) {  
     return (
@@ -47,14 +50,12 @@ export function EventCard({ event, currentUserId }: { event: BackendEvent; curre
   return (
     <Card className="flex flex-col">
       <div className="relative w-full h-40">
-        {event.media[0] && (
-          <Image
-            src={event.media[0].url || PlaceHolderImages[6].imageUrl}
-            alt={event.title}
-            fill
-            className="object-cover rounded-t-lg"
-          />
-        )}
+        <Image
+          src={imageUrl}
+          alt={event.title}
+          fill
+          className="object-cover rounded-t-lg"
+        />
       </div>
       <CardHeader>
         <CardTitle className="font-headline">{event.title}</CardTitle>
