@@ -161,6 +161,8 @@ export async function getConversationMessages(conversationId: string | null) {
   return response.data;
 }
 
+
+// Not async function to get token from local storage
 export function getAuthToken() {
   const response = localStorage.getItem('authToken');
   return response;
