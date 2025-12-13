@@ -251,7 +251,7 @@ export function PostCard({ post }: { post: BackendPost }) {
                   // Parse the comment's createdAt
                   const commentDate = comment.createdAt 
                     ? new Date(Date.parse(comment.createdAt))
-                    : new Date();
+                    : new Date().toISOString();
                   const commentTimeAgo = formatDistanceToNow(commentDate, { addSuffix: true });
                   
                   return (
@@ -273,7 +273,7 @@ export function PostCard({ post }: { post: BackendPost }) {
                           <p className="text-sm">{comment.text}</p>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 pl-3">
-                          {"Just now"}
+                          {commentTimeAgo}
                         </p>
                       </div>
                     </div>
