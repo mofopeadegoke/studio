@@ -63,6 +63,7 @@ export default function LoginPage() {
 
     } catch (error) {
       console.error("Error during login:", error);
+      console.log(error)
       toast({
         variant: "destructive",
         title: "Error",
