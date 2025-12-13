@@ -26,15 +26,20 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { registerSchema } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff } from 'lucide-react'; // Add this import
-import { useState } from 'react'; // Add this import
-
+import { Eye, EyeOff } from 'lucide-react';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SignupPage() {
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false); // Add this state
+  const [showPassword, setShowPassword] = useState(false);
+  const { toast } = useToast();
   
-  const {register, handleSubmit, formState: {errors, isSubmitting}} = useForm<RegisterSchema>({
+  const {
+    register, 
+    handleSubmit, 
+    formState: { errors, isSubmitting }
+  } = useForm<RegisterSchema>({
     resolver: zodResolver(registerSchema), 
     defaultValues: {
       firstName: '',
@@ -49,9 +54,13 @@ export default function SignupPage() {
     try {
       const response = await registerUser(data);
       router.push('/login');
-    }
-    catch (error) {
+    } catch (error) {
       console.error("Error during signup:", error);
+      toast({
+        title: "Signup Failed",
+        description: `${error}`,
+        variant: "destructive"
+      });
     }
   }
 
@@ -72,23 +81,41 @@ export default function SignupPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="first-name">First name</Label>
-                <Input id="first-name" placeholder="Max" required {...register('firstName')}/>
+                <Input 
+                  id="first-name" 
+                  placeholder="Max" 
+                  {...register('firstName')}
+                />
+                {errors.firstName && (
+                  <p className="text-sm text-red-500">{errors.firstName.message}</p>
+                )}
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="last-name">Last name</Label>
-                <Input id="last-name" placeholder="Robinson" required {...register('lastName')}/>
+                <Input 
+                  id="last-name" 
+                  placeholder="Robinson" 
+                  {...register('lastName')}
+                />
+                {errors.lastName && (
+                  <p className="text-sm text-red-500">{errors.lastName.message}</p>
+                )}
               </div>
             </div>
+            
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="m@example.com"
-                required
                 {...register('email')}
               />
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email.message}</p>
+              )}
             </div>
+            
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
@@ -112,10 +139,19 @@ export default function SignupPage() {
                   )}
                 </Button>
               </div>
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password.message}</p>
+              )}
             </div>
+            
             <div className="grid gap-2">
               <Label>I am a...</Label>
-              <Select required {...register('accountType')}>
+              <Select 
+                onValueChange={(value) => register('accountType').onChange({
+                  target: { value, name: 'accountType' }
+                })}
+                defaultValue="Player"
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select user type" />
                 </SelectTrigger>
@@ -126,7 +162,11 @@ export default function SignupPage() {
                   <SelectItem value="Fan">Fan</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.accountType && (
+                <p className="text-sm text-red-500">{errors.accountType.message}</p>
+              )}
             </div>
+            
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Creating...' : 'Create an account'}
             </Button>
