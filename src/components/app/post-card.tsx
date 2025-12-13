@@ -273,7 +273,7 @@ export function PostCard({ post }: { post: BackendPost }) {
                           <p className="text-sm">{comment.text}</p>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1 pl-3">
-                          {commentTimeAgo}
+                          {"Just now"}
                         </p>
                       </div>
                     </div>
