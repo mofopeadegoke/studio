@@ -169,150 +169,156 @@ export function PostCard({ post }: { post: BackendPost }) {
   };
 
   return (
-    <Card className="w-full max-w-[95%] overflow-hidden">
-      <CardHeader className="p-4">
-        <div className="flex items-start gap-4">
-          <Avatar>
-            {avatarUrl && <AvatarImage src={avatarUrl} alt={fullName} />}
-            <AvatarFallback>{author.firstName[0].toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="grid gap-0.5 text-sm">
-            <Link
-              href={`/profile/${author.id}`}
-              className="font-bold hover:underline font-headline"
-            >
-              {fullName}
-            </Link>
-            <div className="text-muted-foreground">
-              @{author.firstName.toLowerCase()}
-              · {timeAgo}
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="p-4 pt-0">
-        <p className="whitespace-pre-wrap">{post.content}</p>
-
-        {mediaUrl && isImage && (
-          <div className="mt-4 rounded-lg overflow-hidden border">
-            <Image
-              src={mediaUrl}
-              alt="Post image"
-              width={800}
-              height={600}
-              className="w-full object-cover aspect-video"
-            />
-          </div>
-        )}
-
-        {mediaUrl && isVideo && (
-          <div className="mt-4 rounded-lg overflow-hidden border">
-            <video
-              width={800}
-              height={600}
-              className="w-full object-cover aspect-video"
-              controls
-            >
-              <source src={mediaUrl} type="video/mp4"/>
-              <source src={mediaUrl} type="video/ogg"/>
-            </video>
-          </div>
-        )}
-      </CardContent>
-
-      <CardFooter className="p-4 pt-0 flex-col items-start gap-4">
-        <div className="flex gap-2 w-full">
-          <Button variant="ghost" size="sm" onClick={handleLikePost}>
-            <Heart className={`mr-2 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} /> {likesCount}
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={handleToggleComments}
+  <Card className="w-full overflow-hidden">
+    <CardHeader className="p-3 sm:p-4">
+      <div className="flex items-start gap-3 sm:gap-4">
+        <Avatar className="flex-shrink-0">
+          {avatarUrl && <AvatarImage src={avatarUrl} alt={fullName} />}
+          <AvatarFallback>{author.firstName[0].toUpperCase()}</AvatarFallback>
+        </Avatar>
+        <div className="grid gap-0.5 text-sm min-w-0 flex-1">
+          <Link
+            href={`/profile/${author.id}`}
+            className="font-bold hover:underline font-headline truncate"
           >
-            <MessageCircle className="mr-2" /> {commentsCount}
-          </Button>
+            {fullName}
+          </Link>
+          <div className="text-muted-foreground truncate">
+            @{author.firstName.toLowerCase()}
+            · {timeAgo}
+          </div>
         </div>
+      </div>
+    </CardHeader>
 
-        {showComments && (
-          <>
-            <Separator />
-            <div className="w-full space-y-4">
-              {isLoadingComments ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Loading comments...
-                </p>
-              ) : comments.length > 0 ? (
-                comments.map(comment => {
-                  const commenter = dummyUsers.find(u => u.id === comment.commenterId) || currentUser;
-                  const commenterAvatar = PlaceHolderImages.find(img => img.id === commenter.avatarId);
-                  
-                  // Parse the comment's createdAt
-                  const commentDate = comment.createdAt 
-                    ? new Date(Date.parse(comment.createdAt))
-                    : new Date().toISOString();
-                  const commentTimeAgo = formatDistanceToNow(commentDate, { addSuffix: true });
-                  
-                  return (
-                    <div key={comment.id} className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8">
-                        {commenterAvatar?.imageUrl && (
-                          <AvatarImage 
-                            src={commenterAvatar.imageUrl} 
-                            alt={commenter.name} 
-                          />
-                        )}
-                        <AvatarFallback>{commenter.name.charAt(0).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="bg-secondary rounded-lg px-3 py-2">
-                          <Link href={`/profile/${commenter.id}`} className="font-semibold text-sm hover:underline">
-                            {commenter.name}
-                          </Link>
-                          <p className="text-sm">{comment.text}</p>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1 pl-3">
-                          {commentTimeAgo}
-                        </p>
+    <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
+      <p className="whitespace-pre-wrap break-words">{post.content}</p>
+
+      {mediaUrl && isImage && (
+        <div className="mt-4 rounded-lg overflow-hidden border">
+          <Image
+            src={mediaUrl}
+            alt="Post image"
+            width={800}
+            height={600}
+            className="w-full h-auto object-cover"
+            style={{ maxHeight: '600px' }}
+          />
+        </div>
+      )}
+
+      {mediaUrl && isVideo && (
+        <div className="mt-4 rounded-lg overflow-hidden border">
+          <video
+            className="w-full h-auto max-h-[600px] object-cover"
+            controls
+            playsInline
+          >
+            <source src={mediaUrl} type="video/mp4"/>
+            <source src={mediaUrl} type="video/ogg"/>
+          </video>
+        </div>
+      )}
+    </CardContent>
+
+    <CardFooter className="p-3 pt-0 sm:p-4 sm:pt-0 flex-col items-start gap-4">
+      <div className="flex gap-2 w-full">
+        <Button variant="ghost" size="sm" onClick={handleLikePost} className="flex-shrink-0">
+          <Heart className={`mr-1 sm:mr-2 h-4 w-4 ${isLiked ? 'fill-red-500 text-red-500' : ''}`} />
+          <span className="text-xs sm:text-sm">{likesCount}</span>
+        </Button>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={handleToggleComments}
+          className="flex-shrink-0"
+        >
+          <MessageCircle className="mr-1 sm:mr-2 h-4 w-4" />
+          <span className="text-xs sm:text-sm">{commentsCount}</span>
+        </Button>
+      </div>
+
+      {showComments && (
+        <>
+          <Separator className="w-full" />
+          <div className="w-full space-y-4">
+            {isLoadingComments ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Loading comments...
+              </p>
+            ) : comments.length > 0 ? (
+              comments.map(comment => {
+                const commenter = dummyUsers.find(u => u.id === comment.commenterId) || currentUser;
+                const commenterAvatar = PlaceHolderImages.find(img => img.id === commenter.avatarId);
+                
+                // Parse the comment's createdAt
+                const commentDate = comment.createdAt 
+                  ? new Date(Date.parse(comment.createdAt))
+                  : new Date().toISOString();
+                const commentTimeAgo = formatDistanceToNow(commentDate, { addSuffix: true });
+                
+                return (
+                  <div key={comment.id} className="flex items-start gap-2 sm:gap-3">
+                    <Avatar className="h-8 w-8 flex-shrink-0">
+                      {commenterAvatar?.imageUrl && (
+                        <AvatarImage 
+                          src={commenterAvatar.imageUrl} 
+                          alt={commenter.name} 
+                        />
+                      )}
+                      <AvatarFallback>{commenter.name.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="bg-secondary rounded-lg px-3 py-2">
+                        <Link 
+                          href={`/profile/${commenter.id}`} 
+                          className="font-semibold text-sm hover:underline break-words"
+                        >
+                          {commenter.name}
+                        </Link>
+                        <p className="text-sm break-words">{comment.text}</p>
                       </div>
+                      <p className="text-xs text-muted-foreground mt-1 pl-3">
+                        {commentTimeAgo}
+                      </p>
                     </div>
-                  );
-                })
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No comments yet. Be the first to comment!
-                </p>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No comments yet. Be the first to comment!
+              </p>
+            )}
+          </div>
+          <form onSubmit={handleAddComment} className="w-full flex items-center gap-2 pt-2">
+            <Avatar className="h-8 w-8 flex-shrink-0">
+              {currentUserAvatar?.imageUrl && (
+                <AvatarImage 
+                  src={currentUserAvatar.imageUrl} 
+                  alt={currentUser.name} 
+                />
               )}
-            </div>
-            <form onSubmit={handleAddComment} className="w-full flex items-center gap-2 pt-2">
-              <Avatar className="h-8 w-8">
-                {currentUserAvatar?.imageUrl && (
-                  <AvatarImage 
-                    src={currentUserAvatar.imageUrl} 
-                    alt={currentUser.name} 
-                  />
-                )}
-                <AvatarFallback>{currentUser.name.charAt(0).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <Input
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Write a comment..."
-                className="h-9"
-              />
-              <Button 
-                type="submit" 
-                size="icon" 
-                className="h-9 w-9 flex-shrink-0" 
-                disabled={!newComment.trim() || isSubmitting}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </form>
-          </>
-        )}
-      </CardFooter>
-    </Card>
-  );
+              <AvatarFallback>{currentUser.name.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <Input
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Write a comment..."
+              className="h-9 flex-1 min-w-0"
+            />
+            <Button 
+              type="submit" 
+              size="icon" 
+              className="h-9 w-9 flex-shrink-0" 
+              disabled={!newComment.trim() || isSubmitting}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </form>
+        </>
+      )}
+    </CardFooter>
+  </Card>
+);
 }

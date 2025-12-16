@@ -117,14 +117,14 @@ export default function HomePage() {
   const canPost = ['Player', 'Team', 'Scout'].includes(currentUser.type);
 
   return (
-    <div className="max-w-2xl mx-auto grid gap-6">
-      <h1 className="text-2xl font-bold font-headline">Home Feed</h1>
+    <div className="w-full max-w-2xl mx-auto px-2 sm:px-4 grid gap-4 sm:gap-6">
+      <h1 className="text-xl sm:text-2xl font-bold font-headline">Home Feed</h1>
 
-      <div className="relative">
+      <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
         <Input
           placeholder="Search posts..."
-          className="pl-10"
+          className="pl-10 w-full"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
@@ -132,7 +132,7 @@ export default function HomePage() {
 
       {canPost && <CreatePostForm currentUser={currentUser} />}
 
-      <div className="grid gap-6">
+      <div className="grid gap-4 sm:gap-6">
         {filteredPosts.map((post) => (
           <PostCard key={post.id} post={post} />
         ))}
