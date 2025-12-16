@@ -209,3 +209,23 @@ export async function getAllEventsPublic() {
   const response = await axios.get(`${API.baseURL}/events`, { timeout: API.timeout });
   return response.data;
 }
+
+export async function follow(userId: string) {
+  const response = await apiClient.post(`/users/${userId}/follow`, {});
+  return response.data;
+}
+
+export async function unfollow(userId: string) {
+  const response = await apiClient.delete(`/users/${userId}/follow`, {});
+  return response.data;
+}
+
+export async function userFollowers(userId: string) {
+  const response = await apiClient.get(`/users/${userId}/followers`, {});
+  return response.data;
+}
+
+export async function userFollowing(userId: string) {
+  const response = await apiClient.get(`/users/${userId}/following`, {});
+  return response.data;
+}
