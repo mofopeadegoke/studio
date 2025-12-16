@@ -125,7 +125,7 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
   };
 
   return (
-    <Card>
+    <Card className='w-full max-w-[98%]'>
       <CardContent className="p-4">
         <div className="flex gap-4">
           <Avatar>
@@ -135,7 +135,7 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
           <div className="w-full">
             <Textarea
               placeholder="What's on your mind?"
-              className="mb-2 min-h-24"
+              className="mb-2 min-h-24 max-w-full"
               value={content}
               onChange={e => setContent(e.target.value)}
             />
