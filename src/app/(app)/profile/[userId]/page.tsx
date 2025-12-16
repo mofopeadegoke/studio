@@ -64,13 +64,15 @@ function UserRow({
   targetUser,
   currentUser,
   onToggleFollow,
+  defaultIsFollowing = false,
 }: {
   targetUser: User;
   currentUser: User;
   onToggleFollow: (userId: string, isFollowing: boolean) => void;
+  defaultIsFollowing?: boolean;
 }) {
   const [isFollowing, setIsFollowing] = useState(
-    currentUser.following.includes(targetUser.id)
+    defaultIsFollowing || currentUser.following.includes(targetUser.id)
   );
 
   const isSelf = targetUser.id === currentUser.id;
@@ -80,7 +82,7 @@ function UserRow({
     if (isFollowing) {
       try {
         const response = await unfollow(targetUser.id);
-        setIsFollowing(prev => !prev);
+        setIsFollowing((prev: boolean) => !prev);
       } catch(error) {
         console.error("Error unfollowing user:", error);
         toast({
@@ -92,7 +94,7 @@ function UserRow({
     } else {
       try {
         const response = await follow(targetUser.id);
-        setIsFollowing(prev => !prev);
+        setIsFollowing((prev: boolean) => !prev);
       } catch(error) {
         console.error("Error following user:", error);
         toast({
@@ -255,9 +257,14 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
   };
 
   /* ---------------- LISTS ---------------- */
-
-  const followersList = allUsers.filter(u => user.followers.includes(u.id));
-  const followingList = allUsers.filter(u => user.following.includes(u.id));
+const mappedFollowersList = userFollowersUI.map(u => ({
+    ...mapBackendUserToFrontendUserWithoutUserKey(u)
+  }));
+  const followersList = mappedFollowersList;
+  const mappedFollowingList = userFollowingUI.map(u => ({
+    ...mapBackendUserToFrontendUserWithoutUserKey(u)
+  }));
+  const followingList = mappedFollowingList;
 
   const searchedUsers = (userSearchQuery ? allUsers : followingList).filter(u =>
     u.name.toLowerCase().includes(userSearchQuery.toLowerCase())
@@ -275,7 +282,7 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
       {/* PROFILE CARD */}
       <Card>
         <div className="relative h-48">
-          <Image src={userCover?.imageUrl || '/dummy/cover.jpg'} fill className="object-cover" alt="cover" />
+          <Image src={userAvatar?.imageUrl || '/dummy/cover.jpg'} fill className="object-cover" alt="cover" />
           <Avatar className="absolute -bottom-16 left-6 h-32 w-32 border-4 border-card">
             <AvatarImage src={userAvatar?.imageUrl} />
             <AvatarFallback>{user.name[0]}</AvatarFallback>
@@ -381,7 +388,7 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
               </div>
 
               {searchedUsers.length ? searchedUsers.map(u => (
-                <UserRow key={u.id} targetUser={u} currentUser={currentUser} onToggleFollow={handleFollowUser} />
+                <UserRow key={u.id} targetUser={u} currentUser={currentUser} onToggleFollow={handleFollowUser} defaultIsFollowing={true} />
               )) : (
                 <Card>
                   <CardContent className="p-6 text-center">
