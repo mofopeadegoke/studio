@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { CreatePostForm } from '@/components/app/create-post-form';
 import { PostCard } from '@/components/app/post-card';
 import { useAuth } from '@/context/auth-context';
@@ -22,72 +22,99 @@ export default function HomePage() {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Load initial posts
   useEffect(() => {
-    async function fetchInitial() {
-      if (!currentUser) return;
+    if (!currentUser) return;
 
+    let isMounted = true;
+
+    const fetchInitial = async () => {
       try {
         const res = await getPosts({ page: 1 });
-        setPosts(res.posts);
-        console.log("Initial posts:", posts);
-        setTotalPages(res.pagination.totalPages);
+        if (isMounted) {
+          setPosts(res.posts);
+          console.log("Initial posts:", res.posts);
+          setTotalPages(res.pagination.totalPages);
+        }
       } catch (err) {
-        console.error('Failed to load posts', err);
+        if (isMounted) {
+          console.error('Failed to load posts', err);
+        }
       } finally {
-        setLoadingInitial(false);
+        if (isMounted) {
+          setLoadingInitial(false);
+        }
       }
-    }
+    };
 
     fetchInitial();
+
+    return () => {
+      isMounted = false;
+    };
   }, [currentUser]);
+
+  // Memoized callback for intersection observer
+  const handleIntersection = useCallback(
+    async (entries: IntersectionObserverEntry[]) => {
+      const first = entries[0];
+      if (!first) return;
+      
+      if (first.isIntersecting && !isFetchingMore && totalPages && page < totalPages) {
+        setIsFetchingMore(true);
+
+        try {
+          const nextPage = page + 1;
+          const res = await getPosts({ page: nextPage });
+
+          setPosts((prev) => [...prev, ...res.posts]);
+          setPage(nextPage);
+        } catch (err) {
+          console.error('Failed to fetch more posts', err);
+        } finally {
+          setIsFetchingMore(false);
+        }
+      }
+    },
+    [page, totalPages, isFetchingMore]
+  );
 
   // Infinite scroll intersection observer
   useEffect(() => {
+    // Clean up previous observer
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
     if (!bottomRef.current) return;
-    if (totalPages && page >= totalPages) return; // No more posts
+    if (totalPages && page >= totalPages) return;
 
-    const observer = new IntersectionObserver(
-      async (entries) => {
-        const first = entries[0];
-        if (first.isIntersecting && !isFetchingMore) {
-          setIsFetchingMore(true);
+    // Create new observer with the memoized callback
+    observerRef.current = new IntersectionObserver(handleIntersection, {
+      threshold: 0.1,
+      rootMargin: '100px'
+    });
 
-          try {
-            const nextPage = page + 1;
-            const res = await getPosts({ page: nextPage });
+    observerRef.current.observe(bottomRef.current);
 
-            setPosts((prev) => [...prev, ...res.posts]);
-            setPage(nextPage);
-          } catch (err) {
-            console.error('Failed to fetch more posts', err);
-          } finally {
-            setIsFetchingMore(false);
-          }
-        }
-      },
-      { threshold: 1 }
-    );
-
-    observer.observe(bottomRef.current);
-
-    return () => observer.disconnect();
-  }, [page, totalPages, isFetchingMore]);
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [handleIntersection, page, totalPages]);
 
   if (loading || loadingInitial) return null;
   if (!currentUser) return null;
 
-  // Filter posts based on follow list
-  const followedUserIds = currentUser.following;
-
-  const feedPosts = posts;
-  const filteredPosts = feedPosts.filter((post) =>
+  // Filter posts based on search query
+  const filteredPosts = posts.filter((post) =>
     post.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const canPost =
-    ['Player', 'Team', 'Scout'].includes(currentUser.type);
+  const canPost = ['Player', 'Team', 'Scout'].includes(currentUser.type);
 
   return (
     <div className="max-w-2xl mx-auto grid gap-6">
@@ -111,7 +138,9 @@ export default function HomePage() {
         ))}
 
         {/* Sentinel for infinite scroll */}
-        <div ref={bottomRef} className="h-10"></div>
+        {totalPages && page < totalPages && (
+          <div ref={bottomRef} className="h-10"></div>
+        )}
 
         {isFetchingMore && (
           <div className="flex justify-center py-4">
