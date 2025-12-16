@@ -17,7 +17,6 @@ import type { User, BackendConversation, BackendMessage } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -512,7 +511,7 @@ export default function Messages() {
 
   if (isLoadingConversations) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-57px-2rem)]">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="mb-2">Loading conversations...</p>
           {!socketConnected && (
@@ -524,16 +523,16 @@ export default function Messages() {
   }
 
   return (
-    <div className="h-[calc(100vh-57px-2rem)] md:h-[calc(100vh-57px-3rem)]">
+    <div className="min-h-screen p-4">
       <Dialog open={isNewMessageDialogOpen} onOpenChange={(isOpen) => {
         setIsNewMessageDialogOpen(isOpen);
         if (!isOpen) {
           resetGroupForm();
         }
       }}>
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 h-full border rounded-lg overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 border rounded-lg min-h-[600px]">
           {/* Conversations List */}
-          <div className="md:col-span-1 lg:col-span-1 border-r flex flex-col">
+          <div className="md:col-span-1 lg:col-span-1 border-r">
             <div className="p-4 border-b flex justify-between items-center">
               <h1 className="text-2xl font-bold font-headline">Messages</h1>
               <DialogTrigger asChild>
@@ -543,7 +542,7 @@ export default function Messages() {
                 </Button>
               </DialogTrigger>
             </div>
-            <ScrollArea className="flex-1">
+            <div className="overflow-y-auto max-h-[calc(100vh-200px)]">
               {conversations.length === 0 ? (
                 <div className="p-4 text-center text-muted-foreground">
                   No conversations yet. Start a new one!
@@ -559,10 +558,10 @@ export default function Messages() {
                     <button
                       key={conv.id}
                       onClick={() => setActiveConversationId(conv.id)}
-                      className="w-full text-left"
+                      className="w-full text-left hover:bg-accent/50 transition-colors"
                     >
                       <div className={cn(
-                        "flex items-center gap-3 p-4 border-b hover:bg-accent/50",
+                        "flex items-center gap-3 p-4 border-b",
                         conv.id === activeConversationId && "bg-accent/80"
                       )}>
                         <Avatar>
@@ -577,13 +576,13 @@ export default function Messages() {
                             </>
                           )}
                         </Avatar>
-                        <div className="flex-1 overflow-hidden">
+                        <div className="flex-1 min-w-0 overflow-hidden">
                           <div className="flex justify-between items-center">
                             <p className="font-semibold truncate">
                               {displayName}
                             </p>
                             {lastMessage && (
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-muted-foreground shrink-0 ml-2">
                                 {formatDistanceToNowStrict(new Date(lastMessage.createdAt))}
                               </p>
                             )}
@@ -599,11 +598,11 @@ export default function Messages() {
                   );
                 })
               )}
-            </ScrollArea>
+            </div>
           </div>
 
           {/* Active Conversation */}
-          <div className="md:col-span-2 lg:col-span-3 flex flex-col h-full">
+          <div className="md:col-span-2 lg:col-span-3 flex flex-col">
             {creatingConversation ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <p>Creating conversation...</p>
@@ -615,7 +614,7 @@ export default function Messages() {
                   {activeConversation.isGroup ? (
                     <>
                       <Avatar><AvatarFallback><UsersIcon className="h-5 w-5" /></AvatarFallback></Avatar>
-                      <h2 className="text-lg font-semibold font-headline">{activeConversation.name}</h2>
+                      <h2 className="text-lg font-semibold font-headline truncate">{activeConversation.name}</h2>
                     </>
                   ) : otherParticipant && (
                     <>
@@ -630,12 +629,12 @@ export default function Messages() {
                           {getConversationDisplayName(activeConversation).charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <h2 className="text-lg font-semibold font-headline">
+                      <h2 className="text-lg font-semibold font-headline truncate">
                         {getConversationDisplayName(activeConversation)}
                       </h2>
                     </>
                   )}
-                  <div className="ml-auto text-sm">
+                  <div className="ml-auto text-sm shrink-0">
                     {socketConnected ? (
                       <span className="text-green-600">● Connected</span>
                     ) : (
@@ -645,13 +644,13 @@ export default function Messages() {
                 </div>
 
                 {/* Messages */}
-                <ScrollArea className="flex-1 p-4">
+                <div className="flex-1 overflow-y-auto p-4 max-h-[calc(100vh-300px)]">
                   {loadingMessages ? (
                     <div className="flex justify-center py-10">
                       <LucideLoader className="h-6 w-6 animate-spin text-muted-foreground" />
                     </div>
                   ) : messages.length === 0 ? (
-                    <div className="flex items-center justify-center h-full">
+                    <div className="flex items-center justify-center h-full min-h-[200px]">
                       <p className="text-muted-foreground">No messages yet. Start the conversation!</p>
                     </div>
                   ) : (
@@ -671,7 +670,7 @@ export default function Messages() {
                             )}
                           >
                             {!isCurrentUser && (
-                              <Avatar className="h-8 w-8">
+                              <Avatar className="h-8 w-8 shrink-0">
                                 {senderAvatar && (
                                   <AvatarImage src={senderAvatar} alt={senderName} />
                                 )}
@@ -689,9 +688,9 @@ export default function Messages() {
                               )}
                             >
                               {!isCurrentUser && activeConversation.isGroup && (
-                                <p className="text-xs font-semibold mb-1">{senderName}</p>
+                                <p className="text-xs font-semibold mb-1 truncate">{senderName}</p>
                               )}
-                              <p>{message.content}</p>
+                              <p className="break-words">{message.content}</p>
                               <p className={cn(
                                 "text-xs mt-1", 
                                 isCurrentUser ? "text-primary-foreground/70" : "text-muted-foreground"
@@ -706,7 +705,7 @@ export default function Messages() {
                       {/* Typing Indicator */}
                       {userTyping && !activeConversation.isGroup && otherParticipant && (
                         <div className="flex items-end gap-3">
-                          <Avatar className="h-8 w-8">
+                          <Avatar className="h-8 w-8 shrink-0">
                             {getParticipantAvatar(otherParticipant) && (
                               <AvatarImage 
                                 src={getParticipantAvatar(otherParticipant)!} 
@@ -726,7 +725,7 @@ export default function Messages() {
                       <div ref={messagesEndRef} />
                     </div>
                   )}
-                </ScrollArea>
+                </div>
 
                 {/* Message Input */}
                 <div className="p-4 border-t bg-background">
@@ -760,7 +759,7 @@ export default function Messages() {
                     <span className="text-red-500">● Connecting...</span>
                   )}
                 </div>
-                <div className="flex items-center justify-center h-full text-muted-foreground">
+                <div className="flex items-center justify-center h-full text-muted-foreground min-h-[400px]">
                   <p>Select a conversation or start a new one</p>
                 </div>
               </div>
@@ -769,7 +768,7 @@ export default function Messages() {
         </div>
 
         {/* New Message Dialog */}
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-auto">
           {newMessageView === 'list' && (
             <>
               <DialogHeader>
@@ -781,7 +780,7 @@ export default function Messages() {
               <Command className="rounded-lg border shadow-md">
                 <CommandInput placeholder="Search for a user..." />
                 <CommandList>
-                  <ScrollArea className="h-48">
+                  <div className="max-h-[300px] overflow-y-auto">
                     <CommandGroup>
                       <CommandItem onSelect={() => setNewMessageView('group-form')} className="cursor-pointer">
                         <div className="flex items-center gap-3">
@@ -811,16 +810,16 @@ export default function Messages() {
                                 {userAvatarUrl && <AvatarImage src={userAvatarUrl} alt={user.name} />}
                                 <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
                               </Avatar>
-                              <div>
-                                <p className="font-medium">{user.name}</p>
-                                <p className="text-xs text-muted-foreground">{user.type}</p>
+                              <div className="min-w-0">
+                                <p className="font-medium truncate">{user.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">{user.type}</p>
                               </div>
                             </div>
                           </CommandItem>
                         );
                       })}
                     </CommandGroup>
-                  </ScrollArea>
+                  </div>
                 </CommandList>
               </Command>
             </>
@@ -848,7 +847,7 @@ export default function Messages() {
                   <Command className="rounded-lg border shadow-md">
                     <CommandInput placeholder="Search for users to add..." />
                     <CommandList>
-                      <ScrollArea className="h-40">
+                      <div className="max-h-[300px] overflow-y-auto">
                         <CommandEmpty>No users found.</CommandEmpty>
                         <CommandGroup>
                           {nonAdminUsers.map((user) => {
@@ -862,26 +861,26 @@ export default function Messages() {
                                 className="cursor-pointer"
                               >
                                 <div className={cn(
-                                  "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", 
+                                  "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary shrink-0", 
                                   isSelected ? 'bg-primary text-primary-foreground' : 'opacity-50 [&_svg]:invisible'
                                 )}>
                                   <Check className={cn("h-4 w-4")} />
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  <Avatar className="h-8 w-8">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <Avatar className="h-8 w-8 shrink-0">
                                     {avatar && <AvatarImage src={avatar} alt={user.name} />}
                                     <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
                                   </Avatar>
-                                  <div>
-                                    <p className="font-medium">{user.name}</p>
-                                    <p className="text-xs text-muted-foreground">{user.type}</p>
+                                  <div className="min-w-0">
+                                    <p className="font-medium truncate">{user.name}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{user.type}</p>
                                   </div>
                                 </div>
                               </CommandItem>
                             );
                           })}
                         </CommandGroup>
-                      </ScrollArea>
+                      </div>
                     </CommandList>
                   </Command>
                 </div>

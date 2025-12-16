@@ -169,7 +169,7 @@ export function PostCard({ post }: { post: BackendPost }) {
   };
 
   return (
-    <Card className="w-full max-w-[98%] overflow-hidden">
+    <Card className="w-full max-w-[95%] overflow-hidden">
       <CardHeader className="p-4">
         <div className="flex items-start gap-4">
           <Avatar>

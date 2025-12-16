@@ -125,7 +125,7 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
   };
 
   return (
-    <Card className='w-full max-w-[98%]'>
+    <Card className='w-full max-w-[95%]'>
       <CardContent className="p-4">
         <div className="flex gap-4">
           <Avatar>
