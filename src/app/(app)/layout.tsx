@@ -27,6 +27,7 @@ import { Logo } from '@/components/app/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
+import { logoutUser } from '@/api/auth';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,7 +75,7 @@ export default function AppLayout({
   ];
 
   const handleLogout = () => {
-    logout();
+    logoutUser();
     router.push('/login');
   };
 

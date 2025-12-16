@@ -1,7 +1,6 @@
-
 'use client';
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useRef } from 'react';
 import type { User } from '@/lib/types';
 import { users as dummyUsers } from '@/lib/data';
 import { getUserProfile } from '@/api/auth';
@@ -49,49 +48,51 @@ function mapBackendUserToFrontendUser(backendUser: any): User {
   };
 }
 
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // useEffect(() => {
-  //   try {
-  //     const storedUserId = localStorage.getItem('currentUserId');
-  //     if (storedUserId) {
-  //       const user = users.find(u => u.id === storedUserId);
-  //       setCurrentUser(user || null);
-  //     }
-  //   } catch (error) {
-  //       console.error("Could not access local storage", error);
-  //   } finally {
-  //       setLoading(false);
-  //   }
-  // }, []);
+  const hasAttemptedFetch = useRef(false); // Track if we've already attempted to fetch
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const profile = await getUserProfile();
-        const frontendUser = mapBackendUserToFrontendUser(profile);
-        connectSocket();
-        setCurrentUser(frontendUser);
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchUserProfile();
-  }, []);
+  const fetchUserProfile = async () => {
+    if (hasAttemptedFetch.current) return;
+    hasAttemptedFetch.current = true;
 
+    // Check if we have an auth token before attempting to fetch
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      setLoading(false);
+      setCurrentUser(null);
+      return;
+    }
+
+    try {
+      const profile = await getUserProfile();
+      const frontendUser = mapBackendUserToFrontendUser(profile);
+      connectSocket();
+      setCurrentUser(frontendUser);
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      // Clear invalid token on error
+      localStorage.removeItem('authToken');
+      setCurrentUser(null);
+      disconnectSocket();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchUserProfile();
+}, []);
   const login = (userId: string) => {
     const user = dummyUsers.find(u => u.id === userId);
     if (user) {
       setCurrentUser(user);
       try {
         localStorage.setItem('currentUserId', user.id);
+        connectSocket(); // Reconnect socket on login
       } catch (error) {
         console.error("Could not access local storage", error);
       }
@@ -104,14 +105,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('currentUserId');
       disconnectSocket();
     } catch (error) {
-        console.error("Could not access local storage", error);
+      console.error("Could not access local storage", error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, logout, loading, setCurrentUser}}>
+    <AuthContext.Provider value={{ currentUser, login, logout, loading, setCurrentUser }}>
       {!loading && children}
-      {loading && <Loader />} 
+      {loading && <Loader />}
     </AuthContext.Provider>
   );
 }
