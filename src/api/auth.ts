@@ -4,7 +4,7 @@ import {users as dummyUsers} from '@/lib/data';
 import { User } from '@/lib/types';
 
 const API = {
-  baseURL: 'https://bask-backend.onrender.com/api',
+  baseURL: 'https://bask-backend-slo6.onrender.com/api',
   timeout: 30000
 };
 
