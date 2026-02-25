@@ -18,17 +18,17 @@ export async function getSocket(): Promise<Socket | null> {
   connectionPromise = (async () => {
     try {
       // Fetch token FIRST
-      console.log('🔄 Fetching token for socket...');
+      console.log('Fetching token for socket...');
       const token = getAuthToken();
       console.log("Token fetched:", token); 
       
       if (!token) {
-        console.error('❌ No auth token available');
+        console.error('No auth token available');
         connectionPromise = null;
         return null;
       }
 
-      console.log('🔐 Token retrieved:', token ? 'Token exists' : 'No token');
+      console.log('Token retrieved:', token ? 'Token exists' : 'No token');
 
       // If socket exists but disconnected, try to reconnect with new token
       if (socket && !socket.connected) {
@@ -51,29 +51,29 @@ export async function getSocket(): Promise<Socket | null> {
       });
 
       socket.on('connect', () => {
-        console.log('✅ Socket connected! ID:', socket?.id);
+        console.log('Socket connected! ID:', socket?.id);
         connectionPromise = null;
       });
 
       socket.on('disconnect', (reason) => {
-        console.log('❌ Socket disconnected. Reason:', reason);
+        console.log('Socket disconnected. Reason:', reason);
         connectionPromise = null;
       });
 
       socket.on('connect_error', (error) => {
-        console.error('❌ Socket connection error:', error.message);
+        console.error('Socket connection error:', error.message);
         connectionPromise = null;
         
         // Clear local storage token if auth error
         if (error.message.includes('Authentication') || error.message.includes('auth')) {
           localStorage.removeItem('authToken');
-          console.log('🔄 Cleared invalid auth token');
+          console.log('Cleared invalid auth token');
         }
       });
 
       return socket;
     } catch (error) {
-      console.error('❌ Error in getSocket:', error);
+      console.error('Error in getSocket:', error);
       connectionPromise = null;
       return null;
     }
