@@ -20,7 +20,6 @@ export async function getSocket(): Promise<Socket | null> {
       // Fetch token FIRST
       console.log('Fetching token for socket...');
       const token = getAuthToken();
-      console.log("Token fetched:", token); 
       
       if (!token) {
         console.error('No auth token available');
@@ -41,13 +40,13 @@ export async function getSocket(): Promise<Socket | null> {
       console.log('Creating new socket connection...');
 
       // Create new socket connection
-      socket = io('https://bask-backend.onrender.com', {
+      socket = io('https://bask-backend-slo6.onrender.com/', {
         auth: { token },
         withCredentials: true,
-        transports: ['websocket', 'polling'],
+        transports: ['polling', 'websocket',],
         reconnection: true,
         reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
+        reconnectionDelay: 6000,
       });
 
       socket.on('connect', () => {
