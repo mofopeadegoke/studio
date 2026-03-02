@@ -256,10 +256,10 @@ export default function Messages() {
       }
     };
 
-    const onConversationCreated = (conversation: BackendConversation) => {
+    const onConversationCreated = async (conversation: BackendConversation) => {
       console.log("📥 New conversation created event received:", conversation);
       
-      // Add conversation immediately with current data
+      // Add conversation immediately with current data so the UI snaps instantly
       setConversations((prev) => {
         // Remove any existing conversation with same ID
         const filtered = prev.filter(c => c.id !== conversation.id);
@@ -278,30 +278,26 @@ export default function Messages() {
       setCreatingConversation(false);
       resetGroupForm();
       
-      // Now try to enrich the conversation with user data
-      setTimeout(() => {
-        setConversations((prev) => {
-          return prev.map(conv => {
-            if (conv.id === conversation.id) {
-              // Enrich participants with current nonAdminUsers data
-              const enrichedParticipants = conv.participants?.map(participant => 
-                enrichParticipantData(participant, currentUser?.id)
-              ) || [];
-              
-              return {
-                ...conv,
-                participants: enrichedParticipants,
-              };
-            }
-            return conv;
-          });
-        });
-      }, 100);
-      
       toast({
         title: 'Success',
         description: conversation.isGroup ? 'Group created!' : 'Conversation ready!',
       });
+
+      // THE FIX: Instead of a timeout, immediately ask the database for the 
+      // complete list of conversations so we get the fully populated participants array.
+      try {
+        const data = await getUserConversations();
+        const enrichedConversations = data?.map((conv:any) => ({
+          ...conv,
+          participants: conv.participants?.map((participant:any) => 
+            enrichParticipantData(participant, currentUser?.id)
+          ) || []
+        })) || [];
+        
+        setConversations(enrichedConversations);
+      } catch (error) {
+        console.error("Error fetching full conversation data:", error);
+      }
     };
 
     const onError = (err: any) => {
