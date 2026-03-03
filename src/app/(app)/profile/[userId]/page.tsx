@@ -44,8 +44,6 @@ import { BackendPost, User, UserType } from '@/lib/types';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { toast, useToast } from '@/hooks/use-toast';
 
-/* ---------------- HELPERS ---------------- */
-
 function getBadgeVariant(userType: UserType): 'fan' | 'player' | 'pro' | 'secondary' {
   switch (userType) {
     case 'Fan':
@@ -71,40 +69,37 @@ function UserRow({
   onToggleFollow: (userId: string, isFollowing: boolean) => void;
   defaultIsFollowing?: boolean;
 }) {
+  // Safe string comparison for the following array
   const [isFollowing, setIsFollowing] = useState(
-    defaultIsFollowing || currentUser.following.includes(targetUser.id)
+    defaultIsFollowing || (currentUser.following || []).some(id => String(id) === String(targetUser.id))
   );
 
-  const isSelf = targetUser.id === currentUser.id;
+  // Safe string comparison for isSelf
+  const isSelf = String(targetUser.id) === String(currentUser.id);
   const userAvatar = PlaceHolderImages.find(img => img.id === targetUser.avatarId);
 
   const handleClick = async () => {
-    if (isFollowing) {
-      try {
-        const response = await unfollow(targetUser.id);
-        setIsFollowing((prev: boolean) => !prev);
-      } catch(error) {
-        console.error("Error unfollowing user:", error);
-        toast({
-          title: "Error",
-          description: "There was an error unfollowing the user.",
-          variant: "destructive"
-        });
+    try {
+      if (isFollowing) {
+        await unfollow(targetUser.id);
+      } else {
+        await follow(targetUser.id);
       }
-    } else {
-      try {
-        const response = await follow(targetUser.id);
-        setIsFollowing((prev: boolean) => !prev);
-      } catch(error) {
-        console.error("Error following user:", error);
-        toast({
-          title: "Error",
-          description: "There was an error following the user.",
-          variant: "destructive"
-        });
-      }
+      
+      // Update local state
+      setIsFollowing((prev: boolean) => !prev);
+      
+      // Tell parent component to update its state!
+      onToggleFollow(targetUser.id, isFollowing); 
+      
+    } catch(error) {
+      console.error("Error toggling follow:", error);
+      toast({
+        title: "Error",
+        description: `There was an error ${isFollowing ? 'unfollowing' : 'following'} the user.`,
+        variant: "destructive"
+      });
     }
-    
   };
 
   return (
@@ -135,8 +130,6 @@ function UserRow({
     </div>
   );
 }
-
-/* ---------------- PAGE ---------------- */
 
 export default function ProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { currentUser } = useAuth();
@@ -215,8 +208,6 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
 
   const isSelf = user.id === currentUser.id;
 
-  /* ---------------- ACTIONS ---------------- */
-
   const handleSaveBio = () => {
     setUser(prev => (prev ? { ...prev, bio: editedBio } : prev));
     setIsEditDialogOpen(false);
@@ -237,26 +228,20 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
     setIsFollowingProfile(prev => !prev);
   };
 
-  const handleFollowUser = async (targetId: string, isFollowing: boolean) => {
-    if (isFollowing) {
-      await unfollow(targetId);
-    } else {
-      await follow(targetId);
-    }
-
+ const handleFollowUser = (targetId: string, wasFollowing: boolean) => {
     setUser(prev =>
       prev
         ? {
             ...prev,
-            following: isFollowing
-              ? prev.following.filter(id => id !== targetId)
+            following: wasFollowing
+              ? prev.following.filter(id => String(id) !== String(targetId))
               : [...prev.following, targetId],
           }
         : prev
     );
   };
 
-  /* ---------------- LISTS ---------------- */
+
 const mappedFollowersList = userFollowersUI.map(u => ({
     ...mapBackendUserToFrontendUserWithoutUserKey(u)
   }));
@@ -266,7 +251,9 @@ const mappedFollowersList = userFollowersUI.map(u => ({
   }));
   const followingList = mappedFollowingList;
 
-  const searchedUsers = (userSearchQuery ? allUsers : followingList).filter(u =>
+  const discoverableUsers = allUsers.filter(u => String(u.id) !== String(currentUser.id));
+
+  const searchedUsers = discoverableUsers.filter(u =>
     u.name.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
 
@@ -275,11 +262,9 @@ const mappedFollowersList = userFollowersUI.map(u => ({
 
   const userPosts = posts.filter(p => p.author.id === user.id);
 
-  /* ---------------- UI ---------------- */
 
   return (
     <div className="w-full grid gap-6">
-      {/* PROFILE CARD */}
       <Card>
         <div className="relative h-48">
           <Image src={userAvatar?.imageUrl || '/dummy/cover.jpg'} fill className="object-cover" alt="cover" />
@@ -381,18 +366,25 @@ const mappedFollowersList = userFollowersUI.map(u => ({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" />
                 <Input
                   className="pl-10"
-                  placeholder="Search users..."
+                  placeholder="Search users to follow..."
                   value={userSearchQuery}
                   onChange={e => setUserSearchQuery(e.target.value)}
                 />
               </div>
 
-              {searchedUsers.length ? searchedUsers.map(u => (
-                <UserRow key={u.id} targetUser={u} currentUser={currentUser} onToggleFollow={handleFollowUser} defaultIsFollowing={true} />
-              )) : (
+              {searchedUsers.length ? (
+                searchedUsers.map(u => (
+                  <UserRow 
+                    key={u.id} 
+                    targetUser={u} 
+                    currentUser={currentUser} 
+                    onToggleFollow={handleFollowUser} 
+                  />
+                ))
+              ) : (
                 <Card>
-                  <CardContent className="p-6 text-center">
-                    {userSearchQuery ? 'No users found.' : 'Not following anyone yet.'}
+                  <CardContent className="p-6 text-center text-muted-foreground">
+                    No users found.
                   </CardContent>
                 </Card>
               )}
