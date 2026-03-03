@@ -62,23 +62,25 @@ function UserRow({
   targetUser,
   currentUser,
   onToggleFollow,
+  initialIsFollowing, // NEW: explicitly pass the status
 }: {
   targetUser: User;
   currentUser: User;
   onToggleFollow: (userId: string, isFollowing: boolean) => void;
+  initialIsFollowing?: boolean;
 }) {
-  // 1. Calculate the true following state safely
-  const isCurrentlyFollowing = (currentUser?.following || []).some(
-    (id) => String(id) === String(targetUser.id)
-  );
+  // Use the explicit prop if provided, otherwise fallback
+  const checkFollowing = () => {
+    if (initialIsFollowing !== undefined) return initialIsFollowing;
+    return (currentUser?.following || []).some(id => String(id) === String(targetUser.id));
+  };
 
-  // 2. Initialize state
-  const [isFollowing, setIsFollowing] = useState(isCurrentlyFollowing);
+  const [isFollowing, setIsFollowing] = useState(checkFollowing());
 
-  // 3. THE FIX: If currentUser loads a fraction of a second later, update the button!
+  // Keep it in sync if the parent data changes
   useEffect(() => {
-    setIsFollowing(isCurrentlyFollowing);
-  }, [isCurrentlyFollowing]);
+    setIsFollowing(checkFollowing());
+  }, [initialIsFollowing, currentUser?.following]);
 
   const isSelf = String(targetUser.id) === String(currentUser?.id);
   const userAvatar = PlaceHolderImages.find(img => img.id === targetUser.avatarId);
@@ -92,6 +94,7 @@ function UserRow({
       }
       
       setIsFollowing((prev: boolean) => !prev);
+      // Pass the PREVIOUS state so the parent knows what action was just taken
       onToggleFollow(targetUser.id, isFollowing); 
       
     } catch(error) {
@@ -241,6 +244,15 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
           }
         : prev
     );
+
+    if (wasFollowing) {
+      setUserFollowingUI(prev => prev.filter(u => String(u.id) !== String(targetId)));
+    } else {
+      const newlyFollowedUser = allUsers.find(u => String(u.id) === String(targetId));
+      if (newlyFollowedUser) {
+        setUserFollowingUI(prev => [...prev, newlyFollowedUser as any]);
+      }
+    }
   };
 
 
@@ -251,19 +263,23 @@ const mappedFollowersList = userFollowersUI.map(u => ({
   const mappedFollowingList = userFollowingUI.map(u => ({
     ...mapBackendUserToFrontendUserWithoutUserKey(u)
   }));
+
   const followingList = mappedFollowingList;
 
+  // 2. Filter Discover section: exclude Self, Admins, AND anyone in mappedFollowingList
   const discoverableUsers = allUsers.filter(u => {
     const isNotSelf = String(u.id) !== String(currentUser.id);
     const isNotAdmin = u.type?.toLowerCase() !== 'admin' && u.name?.toLowerCase() !== 'admin';
-  
-    const isNotAlreadyFollowed = !(currentUser.following || []).some(
-      (id) => String(id) === String(u.id)
+    
+    // Check if this user exists in our accurate following UI list
+    const isNotAlreadyFollowed = !mappedFollowingList.some(
+      (followingUser) => String(followingUser.id) === String(u.id)
     );
     
     return isNotSelf && isNotAdmin && isNotAlreadyFollowed;
   });
 
+  // 3. Apply search query
   const searchedUsers = discoverableUsers.filter(u =>
     u.name.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
@@ -371,20 +387,27 @@ const mappedFollowersList = userFollowersUI.map(u => ({
               )}
             </TabsContent>
 
-            <TabsContent value="following" className="mt-4 space-y-8">
+           <TabsContent value="following" className="mt-4 space-y-8">
               {/* TOP SECTION: People Already Followed */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg font-headline">Following</h3>
-                {followingList.length > 0 ? (
+                {mappedFollowingList.length > 0 ? (
                   <div className="space-y-4">
-                    {followingList.map(u => (
-                      <UserRow 
-                        key={u.id} 
-                        targetUser={u} 
-                        currentUser={currentUser} 
-                        onToggleFollow={handleFollowUser} 
-                      />
-                    ))}
+                    {mappedFollowingList.map(u => {
+                      // If it's your own profile, you definitely follow them. 
+                      // If looking at someone else's profile, check against your own following list.
+                      const isCurrentlyFollowing = isSelf ? true : (currentUser.following || []).some(id => String(id) === String(u.id));
+                      
+                      return (
+                        <UserRow 
+                          key={u.id} 
+                          targetUser={u} 
+                          currentUser={currentUser} 
+                          onToggleFollow={handleFollowUser} 
+                          initialIsFollowing={isCurrentlyFollowing}
+                        />
+                      );
+                    })}
                   </div>
                 ) : (
                   <Card>
@@ -398,7 +421,7 @@ const mappedFollowersList = userFollowersUI.map(u => ({
               {/* DIVIDER */}
               <div className="border-t border-border"></div>
 
-              {/* BOTTOM SECTION: Discover / Search (Excludes followed users) */}
+              {/* BOTTOM SECTION: Discover / Search */}
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg font-headline">Discover People</h3>
                 <div className="relative">
@@ -419,6 +442,7 @@ const mappedFollowersList = userFollowersUI.map(u => ({
                         targetUser={u} 
                         currentUser={currentUser} 
                         onToggleFollow={handleFollowUser} 
+                        initialIsFollowing={false} // By definition, they are not followed yet
                       />
                     ))}
                   </div>
