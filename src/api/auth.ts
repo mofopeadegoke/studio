@@ -175,6 +175,10 @@ export async function getAllEvents() {
   return response.data;
 }
 
+export async function getAllChallenges() {
+  const response = await apiClient.get('/challenges');
+  return response.data;
+}
 export async function deleteComment(commentId: string) {
   const response = await apiClient.delete(`/comments/${commentId}`);
   return response.data;
@@ -182,6 +186,11 @@ export async function deleteComment(commentId: string) {
 
 export async function createEvent(data: FormData) {
   const response = await apiClient.post('/events', data);
+  return response.data;
+}
+
+export async function createChallenge(data: FormData) {
+  const response = await apiClient.post('/challenges', data);
   return response.data;
 }
 
