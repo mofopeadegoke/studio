@@ -71,7 +71,6 @@ export async function loginUser(email: string, password: string) {
 }
 
 export async function logoutUser() {
-  // Clear the token from localStorage
   localStorage.removeItem('authToken');
 }
 

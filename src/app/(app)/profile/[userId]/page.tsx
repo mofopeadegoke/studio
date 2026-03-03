@@ -62,20 +62,25 @@ function UserRow({
   targetUser,
   currentUser,
   onToggleFollow,
-  defaultIsFollowing = false,
 }: {
   targetUser: User;
   currentUser: User;
   onToggleFollow: (userId: string, isFollowing: boolean) => void;
-  defaultIsFollowing?: boolean;
 }) {
-  // Safe string comparison for the following array
-  const [isFollowing, setIsFollowing] = useState(
-    defaultIsFollowing || (currentUser.following || []).some(id => String(id) === String(targetUser.id))
+  // 1. Calculate the true following state safely
+  const isCurrentlyFollowing = (currentUser?.following || []).some(
+    (id) => String(id) === String(targetUser.id)
   );
 
-  // Safe string comparison for isSelf
-  const isSelf = String(targetUser.id) === String(currentUser.id);
+  // 2. Initialize state
+  const [isFollowing, setIsFollowing] = useState(isCurrentlyFollowing);
+
+  // 3. THE FIX: If currentUser loads a fraction of a second later, update the button!
+  useEffect(() => {
+    setIsFollowing(isCurrentlyFollowing);
+  }, [isCurrentlyFollowing]);
+
+  const isSelf = String(targetUser.id) === String(currentUser?.id);
   const userAvatar = PlaceHolderImages.find(img => img.id === targetUser.avatarId);
 
   const handleClick = async () => {
@@ -86,10 +91,7 @@ function UserRow({
         await follow(targetUser.id);
       }
       
-      // Update local state
       setIsFollowing((prev: boolean) => !prev);
-      
-      // Tell parent component to update its state!
       onToggleFollow(targetUser.id, isFollowing); 
       
     } catch(error) {
@@ -251,12 +253,20 @@ const mappedFollowersList = userFollowersUI.map(u => ({
   }));
   const followingList = mappedFollowingList;
 
-  const discoverableUsers = allUsers.filter(u => String(u.id) !== String(currentUser.id));
+  const discoverableUsers = allUsers.filter(u => {
+    const isNotSelf = String(u.id) !== String(currentUser.id);
+    const isNotAdmin = u.type?.toLowerCase() !== 'admin' && u.name?.toLowerCase() !== 'admin';
+  
+    const isNotAlreadyFollowed = !(currentUser.following || []).some(
+      (id) => String(id) === String(u.id)
+    );
+    
+    return isNotSelf && isNotAdmin && isNotAlreadyFollowed;
+  });
 
   const searchedUsers = discoverableUsers.filter(u =>
     u.name.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
-
   const userAvatar = PlaceHolderImages.find(img => img.id === user.avatarId);
   const userCover = PlaceHolderImages.find(img => img.id === user.profileCoverId);
 
@@ -361,33 +371,65 @@ const mappedFollowersList = userFollowersUI.map(u => ({
               )}
             </TabsContent>
 
-            <TabsContent value="following" className="mt-4 space-y-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" />
-                <Input
-                  className="pl-10"
-                  placeholder="Search users to follow..."
-                  value={userSearchQuery}
-                  onChange={e => setUserSearchQuery(e.target.value)}
-                />
+            <TabsContent value="following" className="mt-4 space-y-8">
+              {/* TOP SECTION: People Already Followed */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg font-headline">Following</h3>
+                {followingList.length > 0 ? (
+                  <div className="space-y-4">
+                    {followingList.map(u => (
+                      <UserRow 
+                        key={u.id} 
+                        targetUser={u} 
+                        currentUser={currentUser} 
+                        onToggleFollow={handleFollowUser} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="p-6 text-center text-muted-foreground text-sm">
+                      Not following anyone yet.
+                    </CardContent>
+                  </Card>
+                )}
               </div>
 
-              {searchedUsers.length ? (
-                searchedUsers.map(u => (
-                  <UserRow 
-                    key={u.id} 
-                    targetUser={u} 
-                    currentUser={currentUser} 
-                    onToggleFollow={handleFollowUser} 
+              {/* DIVIDER */}
+              <div className="border-t border-border"></div>
+
+              {/* BOTTOM SECTION: Discover / Search (Excludes followed users) */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg font-headline">Discover People</h3>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                  <Input
+                    className="pl-10"
+                    placeholder="Search for new people to follow..."
+                    value={userSearchQuery}
+                    onChange={e => setUserSearchQuery(e.target.value)}
                   />
-                ))
-              ) : (
-                <Card>
-                  <CardContent className="p-6 text-center text-muted-foreground">
-                    No users found.
-                  </CardContent>
-                </Card>
-              )}
+                </div>
+
+                {searchedUsers.length > 0 ? (
+                  <div className="space-y-4">
+                    {searchedUsers.map(u => (
+                      <UserRow 
+                        key={u.id} 
+                        targetUser={u} 
+                        currentUser={currentUser} 
+                        onToggleFollow={handleFollowUser} 
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="p-6 text-center text-muted-foreground text-sm">
+                      {userSearchQuery ? 'No new users found.' : 'No more users to discover.'}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </div>
