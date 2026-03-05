@@ -177,12 +177,11 @@ export function PostCard({ post }: { post: BackendPost }) {
           <AvatarFallback>{author.firstName[0].toUpperCase()}</AvatarFallback>
         </Avatar>
         <div className="grid gap-0.5 text-sm min-w-0 flex-1">
-          <Link
-            href={`/profile/${author.id}`}
+          <p
             className="font-bold hover:underline font-headline truncate"
           >
             {fullName}
-          </Link>
+          </p>
           <div className="text-muted-foreground truncate">
             @{author.firstName.toLowerCase()}
             · {timeAgo}
