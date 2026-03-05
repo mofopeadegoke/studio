@@ -12,10 +12,20 @@ import { ImageIcon, Sparkles, VideoIcon, X } from 'lucide-react';
 import { enhancePost } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
 import { createPost } from '@/api/auth';
+import type { BackendPost } from '@/lib/types';
 
 const MAX_UPLOAD_SIZE = 32 * 1024 * 1024; // 32MB
 
-export function CreatePostForm({ currentUser }: { currentUser: User }) {
+// NEW: Added userVideoCount to the props interface
+export function CreatePostForm({ 
+  currentUser, 
+  userVideoCount = 0, 
+  onPostCreated
+}: { 
+  currentUser: User; 
+  userVideoCount?: number; 
+  onPostCreated: (post: BackendPost) => void;
+}) {
   const [content, setContent] = useState('');
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -25,6 +35,11 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
   const { toast } = useToast();
 
   const userAvatar = PlaceHolderImages.find(img => img.id === currentUser.avatarId);
+
+  // Calculate how many videos are currently in the draft
+  const draftVideoCount = mediaFiles.filter(file => file.type.startsWith('video/')).length;
+  // Check if they are at or over the limit
+  const isAtVideoLimit = userVideoCount + draftVideoCount >= 5;
 
   const handleEnhance = () => {
     if (!content) {
@@ -56,6 +71,19 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // NEW: Enforce the 5-video limit
+      if (file.type.startsWith('video/')) {
+        if (isAtVideoLimit) {
+          toast({
+            variant: 'destructive',
+            title: 'Video Limit Reached',
+            description: 'You have reached the maximum limit of 5 video posts per account.',
+          });
+          event.target.value = ''; // Reset input
+          return;
+        }
+      }
+
       const currentTotalSize = mediaFiles.reduce((acc, f) => acc + f.size, 0);
       if (currentTotalSize + file.size > MAX_UPLOAD_SIZE) {
         toast({
@@ -63,9 +91,11 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
           title: 'Upload Limit Exceeded',
           description: `You cannot upload more than 32MB of media.`,
         });
+        event.target.value = ''; // Reset input
         return;
       }
       setMediaFiles(prev => [...prev, file]);
+      event.target.value = ''; // Reset input so the same file can be selected again if removed
     }
   };
 
@@ -86,11 +116,8 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
     setIsSubmitting(true);
 
     try {
-      // Create FormData for sending both text and media
       const formData = new FormData();
       formData.append('content', content);
-      
-      // Append all media files
       mediaFiles.forEach((file) => {
         formData.append('media', file);
       });
@@ -112,6 +139,12 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
         videoInputRef.current.value = '';
       }
 
+      console.log(response)
+
+      if (onPostCreated) {
+        onPostCreated(response.post);
+      }
+
     } catch (error) {
       console.error("Error creating post:", error);
       toast({
@@ -125,98 +158,115 @@ export function CreatePostForm({ currentUser }: { currentUser: User }) {
   };
 
   return (
-  <Card className='w-full overflow-hidden'>
-    <CardContent className="p-3 sm:p-4">
-      <div className="flex gap-3 sm:gap-4">
-        <Avatar className="flex-shrink-0">
-          <AvatarImage src={userAvatar?.imageUrl} alt={currentUser.name} data-ai-hint={userAvatar?.imageHint} />
-          <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div className="w-full min-w-0 flex-1">
-          <Textarea
-            placeholder="What's on your mind?"
-            className="mb-2 min-h-24 w-full resize-none"
-            value={content}
-            onChange={e => setContent(e.target.value)}
-          />
-          <div className="grid gap-2 mb-2">
-            {mediaFiles.map((file, index) => (
-              <div key={index} className="relative w-full">
-                {file.type.startsWith('image/') ? (
-                  <Image
-                    src={URL.createObjectURL(file)}
-                    alt="Post preview"
-                    width={600}
-                    height={400}
-                    className="rounded-lg object-cover w-full h-auto max-h-[400px]"
-                  />
-                ) : (
-                  <video
-                    src={URL.createObjectURL(file)}
-                    controls
-                    playsInline
-                    className="rounded-lg object-cover w-full h-auto max-h-[400px]"
-                  />
-                )}
+    <Card className='w-full overflow-hidden'>
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex gap-3 sm:gap-4">
+          <Avatar className="flex-shrink-0">
+            <AvatarImage src={userAvatar?.imageUrl} alt={currentUser.name} data-ai-hint={userAvatar?.imageHint} />
+            <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className="w-full min-w-0 flex-1">
+            <Textarea
+              placeholder="What's on your mind?"
+              className="mb-2 min-h-24 w-full resize-none"
+              value={content}
+              onChange={e => setContent(e.target.value)}
+            />
+            <div className="grid gap-2 mb-2">
+              {mediaFiles.map((file, index) => (
+                <div key={index} className="relative w-full">
+                  {file.type.startsWith('image/') ? (
+                    <Image
+                      src={URL.createObjectURL(file)}
+                      alt="Post preview"
+                      width={600}
+                      height={400}
+                      className="rounded-lg object-cover w-full h-auto max-h-[400px]"
+                    />
+                  ) : (
+                    <video
+                      src={URL.createObjectURL(file)}
+                      controls
+                      playsInline
+                      className="rounded-lg object-cover w-full h-auto max-h-[400px]"
+                    />
+                  )}
+                  <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    className="absolute top-2 right-2 h-7 w-7 rounded-full"
+                    onClick={() => removeMedia(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
+              <div className="flex gap-2 text-muted-foreground">
+                <input
+                  type="file"
+                  ref={imageInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="image/*"
+                />
+                <input
+                  type="file"
+                  ref={videoInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="video/*"
+                />
+                <Button variant="ghost" size="icon" onClick={() => imageInputRef.current?.click()} className="flex-shrink-0">
+                  <ImageIcon className="h-5 w-5" />
+                </Button>
+                
+                {/* NEW: Disable the video button and show an indicator if they hit the limit */}
                 <Button 
-                  variant="destructive" 
+                  variant="ghost" 
                   size="icon" 
-                  className="absolute top-2 right-2 h-7 w-7 rounded-full"
-                  onClick={() => removeMedia(index)}
+                  onClick={() => {
+                    if (isAtVideoLimit) {
+                      toast({
+                        variant: 'destructive',
+                        title: 'Video Limit Reached',
+                        description: 'You have reached the maximum limit of 5 video posts per account.',
+                      });
+                    } else {
+                      videoInputRef.current?.click();
+                    }
+                  }} 
+                  className={`flex-shrink-0 ${isAtVideoLimit ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <X className="h-4 w-4" />
+                  <VideoIcon className="h-5 w-5" />
                 </Button>
               </div>
-            ))}
-          </div>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
-            <div className="flex gap-2 text-muted-foreground">
-              <input
-                type="file"
-                ref={imageInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept="image/*"
-              />
-              <input
-                type="file"
-                ref={videoInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept="video/*"
-              />
-              <Button variant="ghost" size="icon" onClick={() => imageInputRef.current?.click()} className="flex-shrink-0">
-                <ImageIcon className="h-5 w-5" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => videoInputRef.current?.click()} className="flex-shrink-0">
-                <VideoIcon className="h-5 w-5" />
-              </Button>
-            </div>
-            <div className="flex gap-2 w-full sm:w-auto">
-              <Button 
-                variant="outline" 
-                onClick={handleEnhance} 
-                disabled={isPending}
-                className="flex-1 sm:flex-none text-xs sm:text-sm"
-                size="sm"
-              >
-                <Sparkles className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${isPending ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">{isPending ? 'Enhancing...' : 'Enhance with AI'}</span>
-                <span className="sm:hidden">{isPending ? 'Enhancing...' : 'Enhance'}</span>
-              </Button>
-              <Button 
-                onClick={handlePost} 
-                disabled={isSubmitting}
-                className="flex-1 sm:flex-none"
-                size="sm"
-              >
-                {isSubmitting ? 'Posting...' : 'Post'}
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button 
+                  variant="outline" 
+                  onClick={handleEnhance} 
+                  disabled={isPending}
+                  className="flex-1 sm:flex-none text-xs sm:text-sm"
+                  size="sm"
+                >
+                  <Sparkles className={`mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 ${isPending ? 'animate-spin' : ''}`} />
+                  <span className="hidden sm:inline">{isPending ? 'Enhancing...' : 'Enhance with AI'}</span>
+                  <span className="sm:hidden">{isPending ? 'Enhancing...' : 'Enhance'}</span>
+                </Button>
+                <Button 
+                  onClick={handlePost} 
+                  disabled={isSubmitting}
+                  className="flex-1 sm:flex-none"
+                  size="sm"
+                >
+                  {isSubmitting ? 'Posting...' : 'Post'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
 }

@@ -46,7 +46,6 @@ export default function LoginPage() {
   async function onSubmit(data: LoginSchema) {
     try {
       const response = await loginUser(data.email, data.password);
-      console.log("Login response:", response);
       const frontendUser = mapBackendUserToFrontendUser(response);
       connectSocket();
       localStorage.setItem('authToken', response.token);

@@ -162,6 +162,7 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
         const mappedUser = mapBackendUserToFrontendUser(profile);
 
         const rawPosts = await getUserPosts(mappedUser.id);
+        console.log("Raw posts data:", rawPosts); 
         const normalizedPosts = Array.isArray(rawPosts)
           ? rawPosts
           : rawPosts?.posts || [];

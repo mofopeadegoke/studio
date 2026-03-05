@@ -7,7 +7,7 @@ import { useAuth } from '@/context/auth-context';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import type { BackendPost } from '@/lib/types';
-import { getPosts } from '@/api/auth';
+import { getPosts, getUserPosts } from '@/api/auth'; 
 
 export default function HomePage() {
   const { currentUser, loading } = useAuth();
@@ -20,27 +20,40 @@ export default function HomePage() {
 
   const [loadingInitial, setLoadingInitial] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+  
+  // NEW: State to track how many videos the user has posted
+  const [userVideoCount, setUserVideoCount] = useState(0);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
-  // Load initial posts
+  // Load initial posts and calculate user's video count
   useEffect(() => {
     if (!currentUser) return;
 
     let isMounted = true;
 
-    const fetchInitial = async () => {
+    const fetchInitialData = async () => {
       try {
-        const res = await getPosts({ page: 1 });
+        const feedRes = await getPosts({ page: 1 });
+        const userPostsRes = await getUserPosts(currentUser.id);
+        
         if (isMounted) {
-          setPosts(res.posts);
-          console.log("Initial posts:", res.posts);
-          setTotalPages(res.pagination.totalPages);
+          setPosts(feedRes.posts);
+          setTotalPages(feedRes.pagination.totalPages);
+
+          const normalizedUserPosts = Array.isArray(userPostsRes) ? userPostsRes : userPostsRes?.posts || [];
+          
+          const videosPosted = normalizedUserPosts.reduce((count: number, post: BackendPost) => {
+            const hasVideo = post.media?.some((m: any) => m.type === 'video');
+            return hasVideo ? count + 1 : count;
+          }, 0);
+          
+          setUserVideoCount(videosPosted);
         }
       } catch (err) {
         if (isMounted) {
-          console.error('Failed to load posts', err);
+          console.error('Failed to load initial data', err);
         }
       } finally {
         if (isMounted) {
@@ -49,7 +62,7 @@ export default function HomePage() {
       }
     };
 
-    fetchInitial();
+    fetchInitialData();
 
     return () => {
       isMounted = false;
@@ -80,6 +93,14 @@ export default function HomePage() {
     },
     [page, totalPages, isFetchingMore]
   );
+
+  const handlePostCreated = (newPost: BackendPost) => {
+    setPosts((prevPosts) => [newPost, ...prevPosts]);
+    const hasVideo = newPost.media?.some((m: any) => m.type === 'video');
+    if (hasVideo) {
+      setUserVideoCount(prev => prev + 1);
+    }
+  };
 
   // Infinite scroll intersection observer
   useEffect(() => {
@@ -129,8 +150,7 @@ export default function HomePage() {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
-
-      {canPost && <CreatePostForm currentUser={currentUser} />}
+      {canPost && <CreatePostForm currentUser={currentUser} userVideoCount={userVideoCount}  onPostCreated={handlePostCreated}/>}
 
       <div className="grid gap-4 sm:gap-6">
         {filteredPosts.map((post) => (
