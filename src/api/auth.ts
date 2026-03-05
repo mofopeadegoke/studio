@@ -8,19 +8,15 @@ const API = {
   timeout: 30000
 };
 
-// Create axios instance with interceptor
 const apiClient = axios.create({
   baseURL: API.baseURL,
   timeout: API.timeout,
 });
 
-// Add request interceptor to attach token to every request
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from localStorage
     const token = localStorage.getItem('authToken');
     
-    // If token exists, add it to Authorization header
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -32,14 +28,11 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle 401 errors (token expired/invalid)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token is invalid or expired, clear it
       localStorage.removeItem('authToken');
-      // Optionally redirect to login
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }
@@ -50,8 +43,6 @@ apiClient.interceptors.response.use(
 
 export async function registerUser(data: RegisterSchema) {
   const response = await apiClient.post('/auth/register', data);
-  
-  // Save token if registration returns one
   if (response.data.token) {
     localStorage.setItem('authToken', response.data.token);
   }
@@ -61,8 +52,6 @@ export async function registerUser(data: RegisterSchema) {
 
 export async function loginUser(email: string, password: string) {
   const response = await apiClient.post('/auth/login', { email, password });
-  
-  // CRITICAL: Save the token to localStorage
   if (response.data.token) {
     localStorage.setItem('authToken', response.data.token);
   }
@@ -101,12 +90,13 @@ export function mapBackendUserToFrontendUser(backendUser: any): User {
     name: `${backendUser.user.firstName} ${backendUser.user.lastName}`,
     type: backendUser.user.accountType,
     avatarId: randomDummy.avatarId,
-    bio: randomDummy.bio ?? "",
+    bio: backendUser.user.bio ?? "",
     connections: randomDummy.connections ?? [],
     followers: randomDummy.followers ?? [],
     following: randomDummy.following ?? [],
     stats: randomDummy.stats ?? {},
-    profileCoverId: randomDummy.profileCoverId,
+    profileCoverId: backendUser.user.profilePicture,
+    profilePicture: backendUser.user.profilePicture,
     token: backendUser.token,
   };
 }
@@ -209,7 +199,6 @@ export async function getConversationMessages(conversationId: string | null) {
   return response.data;
 }
 
-// Get token from localStorage
 export function getAuthToken() {
   if (typeof window !== 'undefined') {
     return localStorage.getItem('authToken');
@@ -217,9 +206,13 @@ export function getAuthToken() {
   return null;
 }
 
-// Public endpoint - no auth required
 export async function getAllEventsPublic() {
   const response = await axios.get(`${API.baseURL}/events`, { timeout: API.timeout });
+  return response.data;
+}
+
+export async function updateProfile(data: FormData) {
+  const response = await apiClient.put('/users/profile', data);
   return response.data;
 }
 

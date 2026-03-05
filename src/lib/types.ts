@@ -15,6 +15,10 @@ export type User = {
   stats?: Record<string, string | number>;
   profileCoverId?: (typeof PlaceHolderImages)[number]['id'];
   token?: string;
+  profilePicture?: string | null; 
+  profileCover?: string | null;   
+  firstName?: string;
+  lastName?: string;
 };
 
 export type Post = {

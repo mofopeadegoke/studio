@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { use, useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 
-import { Briefcase, MapPin, Search } from 'lucide-react';
+import { Briefcase, MapPin, Search, Camera } from 'lucide-react';
 
 import { PostCard } from '@/components/app/post-card';
 import { useAuth } from '@/context/auth-context';
@@ -37,6 +37,7 @@ import {
   unfollow,
   userFollowers,
   userFollowing,
+  updateProfile
 } from '@/api/auth';
 
 import { notFound } from 'next/navigation';
@@ -62,14 +63,13 @@ function UserRow({
   targetUser,
   currentUser,
   onToggleFollow,
-  initialIsFollowing, // NEW: explicitly pass the status
+  initialIsFollowing, 
 }: {
   targetUser: User;
   currentUser: User;
   onToggleFollow: (userId: string, isFollowing: boolean) => void;
   initialIsFollowing?: boolean;
 }) {
-  // Use the explicit prop if provided, otherwise fallback
   const checkFollowing = () => {
     if (initialIsFollowing !== undefined) return initialIsFollowing;
     return (currentUser?.following || []).some(id => String(id) === String(targetUser.id));
@@ -77,7 +77,6 @@ function UserRow({
 
   const [isFollowing, setIsFollowing] = useState(checkFollowing());
 
-  // Keep it in sync if the parent data changes
   useEffect(() => {
     setIsFollowing(checkFollowing());
   }, [initialIsFollowing, currentUser?.following]);
@@ -94,7 +93,6 @@ function UserRow({
       }
       
       setIsFollowing((prev: boolean) => !prev);
-      // Pass the PREVIOUS state so the parent knows what action was just taken
       onToggleFollow(targetUser.id, isFollowing); 
       
     } catch(error) {
@@ -111,7 +109,7 @@ function UserRow({
     <div className="flex items-center justify-between gap-3">
       <Link href={`/profile/${targetUser.id}`} className="flex items-center gap-3 min-w-0 flex-1">
         <Avatar>
-          <AvatarImage src={userAvatar?.imageUrl} />
+          <AvatarImage src={targetUser.profilePicture || userAvatar?.imageUrl} />
           <AvatarFallback>{targetUser.name[0]}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
@@ -146,8 +144,16 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
   const [userFollowersUI, setUserFollowersUI] = useState<User[]>([]);
   const [userFollowingUI, setUserFollowingUI] = useState<User[]>([]);
 
+  // --- EDIT PROFILE STATE ---
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editedFirstName, setEditedFirstName] = useState('');
+  const [editedLastName, setEditedLastName] = useState('');
   const [editedBio, setEditedBio] = useState('');
+  const [profilePicFile, setProfilePicFile] = useState<File | null>(null);
+  const [profilePicPreview, setProfilePicPreview] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [isFollowingProfile, setIsFollowingProfile] = useState(false);
@@ -162,7 +168,6 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
         const mappedUser = mapBackendUserToFrontendUser(profile);
 
         const rawPosts = await getUserPosts(mappedUser.id);
-        console.log("Raw posts data:", rawPosts); 
         const normalizedPosts = Array.isArray(rawPosts)
           ? rawPosts
           : rawPosts?.posts || [];
@@ -176,7 +181,12 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
         setUser(mappedUser);
         setPosts(normalizedPosts);
         setAllUsers(mappedUsers);
+        
+        // Initialize edit form values
         setEditedBio(mappedUser.bio || '');
+        const nameParts = mappedUser.name?.split(' ') || [];
+        setEditedFirstName(nameParts[0] || '');
+        setEditedLastName(nameParts.slice(1).join(' ') || '');
 
         if (currentUser) {
           setIsFollowingProfile(currentUser.following.includes(mappedUser.id));
@@ -196,11 +206,6 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
         setUserFollowingUI(following.following);
       } catch (error) {
         console.error("Error fetching profile data:", error);
-        toast({
-          title: "Error",
-          description: "There was an error fetching profile data.",
-          variant: "destructive"
-        });
       }
     }
 
@@ -214,9 +219,58 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
 
   const isSelf = user.id === currentUser.id;
 
-  const handleSaveBio = () => {
-    setUser(prev => (prev ? { ...prev, bio: editedBio } : prev));
-    setIsEditDialogOpen(false);
+  // --- HANDLE EDIT PROFILE ---
+  const handleProfilePicChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfilePicFile(file);
+      setProfilePicPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('firstName', editedFirstName.trim());
+      formData.append('lastName', editedLastName.trim());
+      formData.append('bio', editedBio.trim());
+      
+      if (profilePicFile) {
+        formData.append('profilePicture', profilePicFile);
+      }
+      const response = await updateProfile(formData);
+
+      const updatedUser = response?.user || response;
+      const newName = `${editedFirstName.trim()} ${editedLastName.trim()}`.trim();
+
+      setUser(prev => prev ? { 
+        ...prev, 
+        name: updatedUser?.name || newName,
+        firstName: updatedUser?.firstName || editedFirstName,
+        lastName: updatedUser?.lastName || editedLastName,
+        bio: updatedUser?.bio || editedBio,
+        profilePicture: updatedUser?.profilePicture || profilePicPreview || prev.profilePicture
+      } : prev);
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully.",
+      });
+      setIsEditDialogOpen(false);
+      setProfilePicFile(null);
+      
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleProfileFollowToggle = async () => {
@@ -256,47 +310,44 @@ export default function ProfilePage({ params }: { params: Promise<{ userId: stri
     }
   };
 
-
-const mappedFollowersList = userFollowersUI.map(u => ({
+  const mappedFollowersList = userFollowersUI.map(u => ({
     ...mapBackendUserToFrontendUserWithoutUserKey(u)
   }));
   const followersList = mappedFollowersList;
+  
   const mappedFollowingList = userFollowingUI.map(u => ({
     ...mapBackendUserToFrontendUserWithoutUserKey(u)
   }));
-
   const followingList = mappedFollowingList;
 
-  // 2. Filter Discover section: exclude Self, Admins, AND anyone in mappedFollowingList
   const discoverableUsers = allUsers.filter(u => {
     const isNotSelf = String(u.id) !== String(currentUser.id);
     const isNotAdmin = u.type?.toLowerCase() !== 'admin' && u.name?.toLowerCase() !== 'admin';
-    
-    // Check if this user exists in our accurate following UI list
     const isNotAlreadyFollowed = !mappedFollowingList.some(
       (followingUser) => String(followingUser.id) === String(u.id)
     );
-    
     return isNotSelf && isNotAdmin && isNotAlreadyFollowed;
   });
 
-  // 3. Apply search query
   const searchedUsers = discoverableUsers.filter(u =>
     u.name.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
+  
+  // Resolve Avatar and Cover Image sources
   const userAvatar = PlaceHolderImages.find(img => img.id === user.avatarId);
-  const userCover = PlaceHolderImages.find(img => img.id === user.profileCoverId);
+  
+  // Use uploaded picture first, then fallback to placeholder
+  const displayAvatar = user.profilePicture || userAvatar?.imageUrl;
 
   const userPosts = posts.filter(p => p.author.id === user.id);
-
 
   return (
     <div className="w-full grid gap-6">
       <Card>
         <div className="relative h-48">
-          <Image src={userAvatar?.imageUrl || '/dummy/cover.jpg'} fill className="object-cover" alt="cover" />
+          <Image src={displayAvatar || '/dummy/cover.jpg'} fill className="object-cover opacity-80" alt="cover" />
           <Avatar className="absolute -bottom-16 left-6 h-32 w-32 border-4 border-card">
-            <AvatarImage src={userAvatar?.imageUrl} />
+            <AvatarImage src={displayAvatar} />
             <AvatarFallback>{user.name[0]}</AvatarFallback>
           </Avatar>
         </div>
@@ -318,18 +369,73 @@ const mappedFollowersList = userFollowersUI.map(u => ({
 
             <div className="flex gap-2">
               {isSelf ? (
-                <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {
+                  setIsEditDialogOpen(isOpen);
+                  if (!isOpen) setProfilePicPreview(null); // Clear preview if closed without saving
+                }}>
                   <DialogTrigger asChild>
                     <Button variant="outline">Edit Profile</Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
                       <DialogTitle>Edit Profile</DialogTitle>
-                      <DialogDescription>Update your bio</DialogDescription>
+                      <DialogDescription>Update your personal information and avatar.</DialogDescription>
                     </DialogHeader>
-                    <Textarea value={editedBio} onChange={e => setEditedBio(e.target.value)} />
+                    
+                    <div className="grid gap-6 py-4">
+                      {/* Avatar Upload Section */}
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="relative">
+                          <Avatar className="h-24 w-24 border-2">
+                            <AvatarImage src={profilePicPreview || displayAvatar} />
+                            <AvatarFallback>{editedFirstName.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          <Button 
+                            size="icon" 
+                            className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-sm"
+                            onClick={() => fileInputRef.current?.click()}
+                          >
+                            <Camera className="h-4 w-4" />
+                          </Button>
+                          <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={handleProfilePicChange} 
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">Click the camera to upload a new picture</p>
+                      </div>
+
+                      {/* Text Fields Section */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>First Name</Label>
+                          <Input value={editedFirstName} onChange={e => setEditedFirstName(e.target.value)} placeholder="First Name" />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Last Name</Label>
+                          <Input value={editedLastName} onChange={e => setEditedLastName(e.target.value)} placeholder="Last Name" />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Bio</Label>
+                        <Textarea 
+                          value={editedBio} 
+                          onChange={e => setEditedBio(e.target.value)} 
+                          placeholder="Tell us about yourself..."
+                          className="resize-none"
+                        />
+                      </div>
+                    </div>
+
                     <DialogFooter>
-                      <Button onClick={handleSaveBio}>Save</Button>
+                      <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isSaving}>Cancel</Button>
+                      <Button onClick={handleSaveProfile} disabled={isSaving}>
+                        {isSaving ? "Saving..." : "Save Changes"}
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -395,10 +501,7 @@ const mappedFollowersList = userFollowersUI.map(u => ({
                 {mappedFollowingList.length > 0 ? (
                   <div className="space-y-4">
                     {mappedFollowingList.map(u => {
-                      // If it's your own profile, you definitely follow them. 
-                      // If looking at someone else's profile, check against your own following list.
                       const isCurrentlyFollowing = isSelf ? true : (currentUser.following || []).some(id => String(id) === String(u.id));
-                      
                       return (
                         <UserRow 
                           key={u.id} 
@@ -419,7 +522,6 @@ const mappedFollowersList = userFollowersUI.map(u => ({
                 )}
               </div>
 
-              {/* DIVIDER */}
               <div className="border-t border-border"></div>
 
               {/* BOTTOM SECTION: Discover / Search */}
@@ -443,7 +545,7 @@ const mappedFollowersList = userFollowersUI.map(u => ({
                         targetUser={u} 
                         currentUser={currentUser} 
                         onToggleFollow={handleFollowUser} 
-                        initialIsFollowing={false} // By definition, they are not followed yet
+                        initialIsFollowing={false} 
                       />
                     ))}
                   </div>
