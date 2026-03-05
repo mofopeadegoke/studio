@@ -184,6 +184,11 @@ export async function deleteComment(commentId: string) {
   return response.data;
 }
 
+export async function deletePost(postId: string) {
+  const response = await apiClient.delete(`/posts/${postId}`);
+  return response.data;
+}
+
 export async function createEvent(data: FormData) {
   const response = await apiClient.post('/events', data);
   return response.data;

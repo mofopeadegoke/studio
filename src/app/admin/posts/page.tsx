@@ -18,14 +18,20 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { BackendPost, Comment } from '@/lib/types';
+import { BackendPost, Comment, User } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDistanceToNow } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { getAllPosts, getComments, getAllUsers, mapBackendUserToFrontendUserWithoutUserKey, deleteComment } from '@/api/auth';
+import { 
+  getAllPosts, 
+  getComments, 
+  getAllUsers, 
+  mapBackendUserToFrontendUserWithoutUserKey, 
+  deleteComment, 
+  deletePost 
+} from '@/api/auth';
 import { useToast } from '@/hooks/use-toast';
-import { User } from '@/lib/types';
 
 // Transform backend comment format to frontend format
 function mapBackendCommentToFrontend(backendComment: any): Comment {
@@ -40,10 +46,17 @@ function mapBackendCommentToFrontend(backendComment: any): Comment {
 export default function AdminPostsPage() {
   const [posts, setPosts] = useState<BackendPost[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  
+  // Post Details (View) State
   const [selectedPost, setSelectedPost] = useState<BackendPost | null>(null);
   const [selectedPostComments, setSelectedPostComments] = useState<Comment[]>([]);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
+  
+  // Post Deletion State
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -60,7 +73,7 @@ export default function AdminPostsPage() {
         });
       }
     };
-    fetchPosts();
+    
     const fetchUsers = async () => {
       try {
         const data = await getAllUsers();
@@ -76,16 +89,16 @@ export default function AdminPostsPage() {
         });
       }
     };
+
+    fetchPosts();
     fetchUsers();
-    
-  }, []);
+  }, [toast]);
 
   const handleViewClick = async (post: BackendPost) => {
     setSelectedPost(post);
     setIsViewDialogOpen(true);
-    setSelectedPostComments([]); // Clear previous comments
+    setSelectedPostComments([]); 
     
-    // Fetch comments for this post
     setIsLoadingComments(true);
     try {
       const fetchedComments = await getComments(post.id);
@@ -112,12 +125,10 @@ export default function AdminPostsPage() {
   };
 
   const handleDeleteComment = (commentId: string) => {
-    // Remove from local state
     setSelectedPostComments(prevComments => 
       prevComments.filter(c => c.id !== commentId)
     );
     
-    // Update the post's comment count in the posts list
     if (selectedPost) {
       setPosts(prevPosts => 
         prevPosts.map(p => 
@@ -129,6 +140,38 @@ export default function AdminPostsPage() {
     }
     
     deleteParticularComment(commentId);
+  };
+
+  // Set the post ID to open the deletion confirmation modal
+  const triggerDeletePost = (postId: string) => {
+    setPostToDelete(postId);
+  };
+
+  // Execute the deletion API call
+  const confirmDeletePost = async () => {
+    if (!postToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await deletePost(postToDelete);
+      
+      setPosts(prevPosts => prevPosts.filter(p => p.id !== postToDelete));
+      
+      toast({
+        title: "Success",
+        description: "Post deleted successfully.",
+      });
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete post.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+      setPostToDelete(null); // Close the modal
+    }
   };
   
   return (
@@ -163,9 +206,14 @@ export default function AdminPostsPage() {
                         <TableCell>{post.likesCount}</TableCell>
                         <TableCell>{post.commentsCount}</TableCell>
                         <TableCell className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => handleViewClick(post)}>
-                            View Details
-                        </Button>
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleViewClick(post)}>
+                                View Details
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => triggerDeletePost(post.id)}>
+                                Delete
+                            </Button>
+                          </div>
                         </TableCell>
                     </TableRow>
                     );
@@ -175,6 +223,7 @@ export default function AdminPostsPage() {
         </CardContent>
        </Card>
 
+      {/* View Post Details Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -219,11 +268,43 @@ export default function AdminPostsPage() {
                         )}
                     </div>
                 </div>
-
             </div>
           )}
           <DialogFooter>
             <Button onClick={() => setIsViewDialogOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Standardized Delete Confirmation Dialog */}
+      <Dialog 
+        open={!!postToDelete} 
+        onOpenChange={(isOpen) => {
+          if (!isOpen && !isDeleting) setPostToDelete(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you sure?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete the post and remove all associated data from our servers.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setPostToDelete(null)}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDeletePost}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete Post"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
