@@ -70,7 +70,7 @@ export default function AppLayout({
     { href: '/home', icon: Home, label: 'Home' },
     { href: '/messages', icon: MessageSquare, label: 'Messages' },
     { href: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
-    { href: '/events', icon: Calendar, label: 'Events' },
+    { href: '/events', icon: Calendar, label: 'Events & Challenges' },
     { href: `/profile/${currentUser.id}`, icon: UserCircle, label: 'Profile' },
   ];
 
