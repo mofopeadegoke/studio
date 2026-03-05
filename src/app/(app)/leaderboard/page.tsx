@@ -196,13 +196,13 @@ export default function LeaderboardPage() {
                             {entry.rank === 1 ? '🥇 1' : entry.rank === 2 ? '🥈 2' : entry.rank === 3 ? '🥉 3' : entry.rank}
                           </TableCell>
                           <TableCell>
-                            <Link href={`/profile/${entry.userId}`} className="flex items-center gap-3 hover:underline">
+                            <p className="flex items-center gap-3 hover:underline font-semibold text-lg">
                                 <Avatar>
                                     <AvatarImage src={entry.profilePicture || undefined} alt={entry.userName} />
                                     <AvatarFallback>{entry.userName.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <span className="font-medium">{entry.userName}</span>
-                            </Link>
+                            </p>
                           </TableCell>
                           <TableCell className="text-right font-mono font-semibold text-lg">
                             {entry.score.toLocaleString()}
