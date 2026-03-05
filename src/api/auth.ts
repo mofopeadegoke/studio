@@ -104,17 +104,30 @@ export function mapBackendUserToFrontendUser(backendUser: any): User {
 export function mapBackendUserToFrontendUserWithoutUserKey(backendUser: any): User {
   const randomDummy = getRandomDummyUser();
 
+  // Safely check for first and last names
+  const fName = backendUser.firstName && backendUser.firstName !== "undefined" ? backendUser.firstName : "";
+  const lName = backendUser.lastName && backendUser.lastName !== "undefined" ? backendUser.lastName : "";
+  
+  // Construct name, fallback to backendUser.name if available, else "Unknown User"
+  let constructedName = `${fName} ${lName}`.trim();
+  if (!constructedName) {
+    constructedName = backendUser.name || "Unknown User";
+  }
+
   return {
     id: backendUser.id,
-    name: `${backendUser.firstName} ${backendUser.lastName}`,
-    type: backendUser.accountType,
+    name: constructedName,
+    firstName: fName,
+    lastName: lName,
+    type: backendUser.accountType || backendUser.type || "Fan",
     avatarId: randomDummy.avatarId,
-    bio: randomDummy.bio ?? "",
+    bio: backendUser.bio || randomDummy.bio || "",
     connections: randomDummy.connections ?? [],
     followers: randomDummy.followers ?? [],
     following: randomDummy.following ?? [],
     stats: randomDummy.stats ?? {},
     profileCoverId: randomDummy.profileCoverId,
+    profilePicture: backendUser.profilePicture || null,
   };
 }
 
