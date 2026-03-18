@@ -1,6 +1,6 @@
-# SportLink
+# Bask
 
-**SportLink** is a social networking platform built for the sports community — connecting Players, Fans, Teams, and Scouts in one place. It supports profile management, social connections, content posting with AI assistance, real-time leaderboards, direct messaging, and event registration.
+**Bask** is a social networking platform built for the sports community — connecting Players, Fans, Teams, and Scouts in one place. It supports profile management, social connections, content posting with AI assistance, real-time leaderboards, direct messaging, and event registration.
 
 ---
 
